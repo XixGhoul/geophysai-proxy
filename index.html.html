@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GeoPhysAI v3 — Intelligent Geophysical Interpretation System</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── reset ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070d0f;--surf:#0d1a1e;--panel:#111f24;--bdr:#1a3540;
+  --acc:#00e5b0;--accD:#007a5e;
+  --amb:#f5a623;--red:#ff4d4d;--blu:#38bdf8;
+  --txt:#c8e6ea;--mut:#5a7f88;--grid:#0f2830;
+  --pur:#c084fc;--grn:#00c853;--org:#fb923c;--pnk:#f472b6;
+}
+body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier New',monospace;min-height:100vh;display:flex;flex-direction:column;font-size:13px}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+
+/* ── header (exact original style) ── */
+#hdr{border-bottom:1px solid var(--bdr);background:var(--surf);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo-wrap{display:flex;align-items:center;gap:14px}
+.logo-icon{width:36px;height:36px;border-radius:6px;background:linear-gradient(135deg,rgba(0,229,176,.18),rgba(0,122,94,.38));border:1px solid var(--accD);display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-name{font-size:16px;color:var(--acc);letter-spacing:3px;font-weight:700}.logo-name span{color:var(--txt)}
+.logo-sub{font-size:10px;color:var(--mut);letter-spacing:2px;margin-top:2px}
+.badge{font-size:10px;font-family:monospace;letter-spacing:2px;border:1px solid;border-radius:2px;padding:2px 6px;text-transform:uppercase;opacity:.9}
+
+/* ── tabs ── */
+#tabs{display:flex;background:var(--surf);border-bottom:1px solid var(--bdr);padding:0 28px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+#tabs::-webkit-scrollbar{display:none}
+.tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;padding:13px 16px;cursor:pointer;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-family:inherit;color:var(--mut);white-space:nowrap;transition:all .15s}
+.tab-btn:hover:not(.tab-on){color:var(--txt)}
+.tab-on{border-bottom-color:var(--tc);color:var(--tc);background:linear-gradient(180deg,rgba(255,255,255,.04) 0%,transparent 100%)}
+
+/* ── page body ── */
+#body{flex:1;padding:22px 28px;display:flex;flex-direction:column;gap:18px;overflow-y:auto}
+
+/* ── method header ── */
+.mhdr{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.mhdr-title{font-size:18px;font-weight:700;letter-spacing:1px}
+.mhdr-sub{font-size:11px;color:var(--mut);margin-top:3px;letter-spacing:1px}
+.acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* ── buttons (exact original feel) ── */
+.btn{border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .15s;text-transform:uppercase;padding:6px 14px;border:1px solid var(--acc);background:transparent;color:var(--acc)}
+.btn:hover{background:rgba(0,229,176,.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-mut{border-color:var(--mut);color:var(--mut)}.btn-mut:hover{background:rgba(90,127,136,.1)}
+.btn-pri{font-weight:700}
+
+/* ── panels ── */
+.panel{background:var(--panel);border:1px solid var(--bdr);border-radius:6px;padding:18px}
+.sec{font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:monospace;margin-bottom:12px;border-bottom:1px solid var(--bdr);padding-bottom:8px}
+
+/* ── grid layouts ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.g12{display:grid;grid-template-columns:1.2fr 0.8fr;gap:18px}
+@media(max-width:960px){.g2,.g3,.g4,.g5{grid-template-columns:1fr 1fr}.g12{grid-template-columns:1fr}}
+@media(max-width:600px){.g2,.g3,.g4,.g5,.g12{grid-template-columns:1fr}}
+
+/* ── metric card (original Metric component) ── */
+.metric{background:var(--surf);border:1px solid var(--bdr);border-radius:4px;padding:10px 14px;min-width:90px}
+.m-lbl{font-size:10px;color:var(--mut);letter-spacing:2px;font-family:monospace;margin-bottom:4px;text-transform:uppercase}
+.m-val{font-size:20px;font-family:monospace;font-weight:700}
+.m-unit{font-size:12px;color:var(--mut);margin-left:4px;font-weight:400}
+
+/* ── CSV hint ── */
+.csv-hint{border-radius:4px;padding:8px 14px;font-size:10px;color:var(--mut);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+
+/* ── chart box ── */
+.chart-box{position:relative;height:260px;width:100%}
+
+/* ── AI panel (original style) ── */
+.ai-out{font-size:12px;line-height:1.75;color:var(--txt);white-space:pre-wrap;max-height:320px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent}
+.ai-idle{height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--mut);font-size:12px;text-align:center}
+.blink{animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+
+/* ── data preview table (original) ── */
+.dt-wrap{max-height:180px;overflow-y:auto;scrollbar-width:thin}
+.dt{width:100%;border-collapse:collapse;font-size:11px}
+.dt th{text-align:left;padding:4px 10px;border-bottom:1px solid var(--bdr);letter-spacing:2px;font-size:10px}
+.dt td{padding:4px 10px;color:var(--txt);border-bottom:1px solid var(--grid)}
+.dt tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+
+/* ── layer stratigraphy table (NEW) ── */
+.lt{width:100%;border-collapse:collapse;font-size:11px;font-family:monospace}
+.lt th{background:var(--surf);padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bdr);white-space:nowrap}
+.lt td{padding:7px 10px;border-bottom:1px solid var(--grid);white-space:nowrap}
+.lt tr:hover td{background:rgba(255,255,255,.015)}
+
+/* ── anomaly badges ── */
+.ab{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-family:monospace;letter-spacing:1px;text-transform:uppercase;border:1px solid}
+.grn{background:rgba(0,200,83,.12);color:#00c853;border-color:rgba(0,200,83,.28)}
+.blu{background:rgba(56,189,248,.10);color:#38bdf8;border-color:rgba(56,189,248,.26)}
+.amb{background:rgba(245,166,35,.10);color:#f5a623;border-color:rgba(245,166,35,.26)}
+.red{background:rgba(255,77,77,.10);color:#ff4d4d;border-color:rgba(255,77,77,.26)}
+.pur{background:rgba(192,132,252,.10);color:#c084fc;border-color:rgba(192,132,252,.26)}
+.org{background:rgba(251,146,60,.10);color:#fb923c;border-color:rgba(251,146,60,.26)}
+
+/* ── interpretation note box ── */
+.ibox{background:rgba(0,229,176,.04);border-left:3px solid var(--acc);border-radius:0 4px 4px 0;padding:12px 14px;font-size:12px;line-height:1.8;color:var(--mut);margin-top:12px}
+.ibox h4{font-size:10px;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;font-family:monospace}
+
+/* ── terrain map ── */
+#terrain-canvas{width:100%;display:block;border-radius:4px}
+.coord-hdr-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 32px;gap:6px;margin-bottom:6px}
+.coord-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 32px;gap:6px;margin-bottom:5px;align-items:center}
+.coord-row input,.coord-hdr-row div{font-family:monospace;font-size:11px}
+.coord-row input{background:var(--surf);border:1px solid var(--bdr);color:var(--txt);border-radius:3px;padding:5px 8px;width:100%}
+.coord-row input:focus{outline:none;border-color:var(--acc)}
+.chdr{font-size:9px;color:var(--acc);text-transform:uppercase;letter-spacing:1px}
+.del-btn{background:transparent;border:1px solid var(--red);color:var(--red);border-radius:3px;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.del-btn:hover{background:rgba(255,77,77,.1)}
+.clr-bar{display:flex;height:16px;border-radius:4px;overflow:hidden;margin-bottom:4px}
+.clr-lbls{display:flex;justify-content:space-between;font-size:10px;color:var(--mut);font-family:monospace}
+
+/* ── footer ── */
+#footer{border-top:1px solid var(--bdr);background:var(--surf);padding:10px 28px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--mut);letter-spacing:1px;flex-shrink:0;flex-wrap:wrap;gap:6px}
+
+/* ── API key overlay ── */
+#key-overlay{position:fixed;inset:0;background:rgba(7,13,15,0.96);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)}
+.key-card{background:var(--panel);border:1px solid rgba(0,229,176,0.35);border-radius:10px;padding:36px;max-width:460px;width:calc(100% - 40px)}
+.key-card h2{font-size:20px;font-weight:700;color:var(--acc);letter-spacing:3px;margin-bottom:8px}
+.key-card p{font-size:12px;color:var(--mut);line-height:1.7;margin-bottom:20px}
+.key-input{width:100%;background:var(--surf);border:1px solid var(--bdr);border-radius:4px;padding:11px 14px;color:var(--txt);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;margin-bottom:12px;letter-spacing:1px}
+.key-input:focus{border-color:var(--acc)}
+.key-input::placeholder{color:var(--mut)}
+.key-note{font-size:10px;color:var(--mut);margin-top:10px;line-height:1.7}
+.key-note a{color:var(--blu)}
+.api-dot{width:7px;height:7px;border-radius:50%;background:var(--red);transition:background .3s;flex-shrink:0}
+.api-dot.ready{background:var(--acc)}
+</style>
+</head>
+<body>
+
+<!-- API KEY OVERLAY -->
+<div id="key-overlay">
+  <div class="key-card">
+    <h2>GEOPHYS<span style="color:var(--txt)">AI</span></h2>
+    <p>Enter your Anthropic API key to enable AI-powered geological interpretation. Your key is stored only in this browser session and is never sent anywhere except Anthropic's servers.</p>
+    <input type="password" class="key-input" id="api-key-input" placeholder="sk-ant-api03-…" />
+    <button class="btn btn-pri" style="width:100%;justify-content:center;padding:11px;font-size:12px;background:var(--acc);color:#070d0f" onclick="saveKey()">
+      Continue to GeoPhysAI →
+    </button>
+    <div class="key-note">
+      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
+      Key is stored in memory only — cleared when you close this tab.
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div class="logo-wrap">
+    <div class="logo-icon">🌍</div>
+    <div>
+      <div class="logo-name">GEOPHYS<span>AI</span></div>
+      <div class="logo-sub">INTELLIGENT GEOPHYSICAL INTERPRETATION SYSTEM</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--mut);font-family:monospace">
+      <div class="api-dot" id="api-dot"></div>
+      <span id="api-status-text">No key</span>
+    </div>
+    <span class="badge" style="color:var(--acc)">v3.0</span>
+    <span class="badge" style="color:var(--amb)">AI POWERED</span>
+    <span class="badge" style="color:var(--blu)">10 METHODS</span>
+    <button class="btn btn-mut" style="padding:4px 10px;font-size:10px" onclick="showKeyOverlay()">🔑 API Key</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div id="tabs"></div>
+
+<!-- BODY -->
+<div id="body"></div>
+
+<!-- FOOTER -->
+<div id="footer">
+  <span>GEOPHYSAI · POWERED BY CLAUDE · APPLIED GEOPHYSICS MODULE</span>
+  <span>VES · ERT · IP · SP · EM · GPR · MAGNETIC · GRAVITY · SEIS.REFRACTION · SEIS.REFLECTION · TERRAIN MAP</span>
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════
+   API KEY
+═══════════════════════════════════════════════════════════ */
+let API_KEY = "";
+
+function saveKey(){
+  const val=document.getElementById("api-key-input").value.trim();
+  if(!val.startsWith("sk-")){alert("Please enter a valid Anthropic API key (starts with sk-)");return;}
+  API_KEY=val;
+  document.getElementById("key-overlay").style.display="none";
+  document.getElementById("api-dot").classList.add("ready");
+  document.getElementById("api-status-text").textContent="Key active";
+}
+
+function showKeyOverlay(){
+  document.getElementById("key-overlay").style.display="flex";
+  document.getElementById("api-key-input").value=API_KEY;
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const inp=document.getElementById("api-key-input");
+  if(inp) inp.addEventListener("keydown",e=>{if(e.key==="Enter") saveKey();});
+});
+
+/* ═══════════════════════════════════════════════════════════
+   PALETTE  (exact original C object)
+═══════════════════════════════════════════════════════════ */
+const C={bg:"#070d0f",surface:"#0d1a1e",panel:"#111f24",border:"#1a3540",
+  accent:"#00e5b0",accentDim:"#007a5e",amber:"#f5a623",red:"#ff4d4d",
+  blue:"#38bdf8",text:"#c8e6ea",muted:"#5a7f88",grid:"#0f2830",
+  purple:"#c084fc",green:"#00c853",orange:"#fb923c",pink:"#f472b6"};
+
+/* ═══════════════════════════════════════════════════════════
+   METHODS  (original 4 + 6 new + terrain tab)
+═══════════════════════════════════════════════════════════ */
+const METHODS=[
+  {id:"ves",    label:"VES",              full:"Vertical Electrical Sounding",      icon:"⚡",color:C.accent},
+  {id:"ert",    label:"ERT",              full:"Electrical Resistivity Tomography", icon:"🔌",color:C.blue},
+  {id:"ip",     label:"IP",               full:"Induced Polarization",              icon:"⚗️",color:C.amber},
+  {id:"sp",     label:"SP",               full:"Self-Potential Survey",             icon:"🔋",color:C.purple},
+  {id:"em",     label:"EM",               full:"Electromagnetic Survey (EM34)",     icon:"📡",color:C.orange},
+  {id:"gpr",    label:"GPR",              full:"Ground Penetrating Radar",          icon:"📶",color:C.pink},
+  {id:"magnetic",label:"Magnetic",        full:"Magnetic Survey",                   icon:"🧲",color:C.amber},
+  {id:"gravity", label:"Gravity",         full:"Gravity Survey",                    icon:"⬇️",color:C.purple},
+  {id:"sref",   label:"Seis.Refraction",  full:"Seismic Refraction Survey",         icon:"〜",color:C.green},
+  {id:"srefl",  label:"Seis.Reflection",  full:"Seismic Reflection Survey",         icon:"≋", color:C.orange},
+  {id:"terrain",label:"Terrain Map",      full:"Geophysical Terrain Contour Map",   icon:"🗺️",color:C.blue},
+];
+
+/* ═══════════════════════════════════════════════════════════
+   SAMPLE DATA  (original 4 + 6 new)
+═══════════════════════════════════════════════════════════ */
+const SAMPLE={
+  ves:[
+    {ab2:1,rho_a:120},{ab2:1.5,rho_a:110},{ab2:2,rho_a:95},{ab2:3,rho_a:78},
+    {ab2:5,rho_a:55},{ab2:7,rho_a:42},{ab2:10,rho_a:38},{ab2:15,rho_a:30},
+    {ab2:20,rho_a:28},{ab2:30,rho_a:24},{ab2:50,rho_a:22},{ab2:70,rho_a:26},
+    {ab2:100,rho_a:35},{ab2:150,rho_a:48},{ab2:200,rho_a:62},
+  ],
+  ert:Array.from({length:40},(_,i)=>({x:(i%8)*5,depth:-Math.floor(i/8)*3,rho:20+Math.sin(i*.7)*15+(i>20?40:0)+Math.random()*10})),
+  ip:Array.from({length:12},(_,i)=>({spacing:(i+1)*5,chargeability:5+Math.sin(i*.5)*3+(i>4&&i<9?33:0),resistivity:80-i*3+(i>4&&i<9?-30:0)})),
+  sp:Array.from({length:21},(_,i)=>({station:i*10,sp:2-Math.exp(-((i-10)**2)/8)*185})),
+  em:Array.from({length:21},(_,i)=>({station:i*10,inphase:8+Math.exp(-((i-10)**2)/6)*610,quadrature:3+Math.exp(-((i-10)**2)/8)*120})),
+  gpr:Array.from({length:21},(_,i)=>({distance:i,amplitude:5+Math.exp(-((i-10)**2)/4)*80})),
+  magnetic:Array.from({length:50},(_,i)=>({station:i*10,tmf:32000+Math.sin(i*.3)*200+(i>20&&i<35?800:0)+Math.random()*50,rtp:32000+Math.sin(i*.3)*180+(i>22&&i<33?750:0)+Math.random()*30})),
+  gravity:Array.from({length:45},(_,i)=>({station:i*20,bouguer:-12+Math.cos(i*.25)*3+(i>18&&i<30?-5:0)+Math.random()*.5,freeair:-8+Math.cos(i*.25)*4+(i>18&&i<30?-4:0)+Math.random()*.5})),
+  sref:Array.from({length:20},(_,i)=>({distance:i*5,traveltime:i<8?i*3.1:24+(i-8)*5.6})),
+  srefl:Array.from({length:21},(_,i)=>({cmp:i*50,twt:820+Math.sin(i*.3)*15+Math.random()*8})),
+};
+
+/* ═══════════════════════════════════════════════════════════
+   VES LAYER MODEL  (NEW — core of the enhancement)
+   Cumulative depths are computed from thick values.
+═══════════════════════════════════════════════════════════ */
+const VES_LAYERS=[
+  {n:1,name:"Topsoil / Laterite",       res:85,   thick:3,   dens:1.65,cls:"amb",lbl:"Dry Overburden",      target:""},
+  {n:2,name:"Weathered Zone",            res:32,   thick:8,   dens:1.80,cls:"amb",lbl:"Partly Saturated",    target:""},
+  {n:3,name:"Clayey Sand (Aquitard)",    res:18,   thick:11,  dens:1.95,cls:"pur",lbl:"Protective Aquitard", target:""},
+  {n:4,name:"Fractured Basement",        res:220,  thick:12,  dens:2.10,cls:"grn",lbl:"★ Primary Aquifer",   target:"AQUIFER"},
+  {n:5,name:"Fresh Basement Rock",       res:4800, thick:null,dens:2.65,cls:"red",lbl:"Resistive Bedrock",   target:""},
+];
+const VES_RMS=3.2; // % RMS misfit for the 5-layer model
+
+/* ═══════════════════════════════════════════════════════════
+   APP STATE
+═══════════════════════════════════════════════════════════ */
+const S={
+  active:"ves",
+  data:{...SAMPLE},
+  aiText:{},loading:{},error:{},uploadName:{},
+  chartInst:null,
+  terrainPts:[
+    {lon:3.3792,lat:6.5244,val:240,lbl:"VES-01"},{lon:3.3820,lat:6.5260,val:180,lbl:"VES-02"},
+    {lon:3.3850,lat:6.5244,val:320,lbl:"VES-03"},{lon:3.3792,lat:6.5280,val:95, lbl:"VES-04"},
+    {lon:3.3820,lat:6.5300,val:420,lbl:"VES-05"},{lon:3.3850,lat:6.5280,val:160,lbl:"VES-06"},
+    {lon:3.3792,lat:6.5320,val:280,lbl:"VES-07"},{lon:3.3820,lat:6.5340,val:560,lbl:"VES-08"},
+    {lon:3.3850,lat:6.5320,val:380,lbl:"VES-09"},{lon:3.3870,lat:6.5260,val:210,lbl:"VES-10"},
+    {lon:3.3870,lat:6.5300,val:130,lbl:"VES-11"},{lon:3.3870,lat:6.5340,val:490,lbl:"VES-12"},
+  ],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   STATS  (mirrors original computeStats)
+═══════════════════════════════════════════════════════════ */
+function computeStats(id){
+  const d=S.data[id]; if(!d||!d.length) return null;
+  const key={ves:"rho_a",ert:"rho",ip:"chargeability",sp:"sp",em:"inphase",
+             gpr:"amplitude",magnetic:"tmf",gravity:"bouguer",sref:"traveltime",srefl:"twt"}[id];
+  if(!key) return null;
+  const vals=d.map(r=>r[key]).filter(v=>!isNaN(v));
+  const mn=Math.min(...vals),mx=Math.max(...vals);
+  return{min:mn.toFixed(2),max:mx.toFixed(2),spread:(mx-mn).toFixed(2),points:d.length};
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CSV TEMPLATES  (original)
+═══════════════════════════════════════════════════════════ */
+const CSV_TMPL={
+  ves:"ab2,rho_a",ert:"x,depth,rho",ip:"spacing,chargeability,resistivity",
+  sp:"station,sp",em:"station,inphase,quadrature",gpr:"distance,amplitude",
+  magnetic:"station,tmf,rtp",gravity:"station,bouguer,freeair",
+  sref:"distance,traveltime",srefl:"cmp,twt",
+};
+
+/* ═══════════════════════════════════════════════════════════
+   METRIC DEFINITIONS  (original 3 metrics + enhanced extras)
+═══════════════════════════════════════════════════════════ */
+function metricDefs(id){
+  const s=computeStats(id);
+  return({
+    ves:[{l:"Min ρₐ",v:s?.min,u:"Ω·m"},{l:"Max ρₐ",v:s?.max,u:"Ω·m"},
+         {l:"Layers Detected",v:"5",u:""},{l:"RMS Misfit",v:VES_RMS+"%",u:""}],
+    ert:[{l:"Min ρ",v:s?.min,u:"Ω·m"},{l:"Max ρ",v:s?.max,u:"Ω·m"},
+         {l:"Profile Length",v:"120",u:"m"},{l:"Investigation Depth",v:"28",u:"m"}],
+    ip:[{l:"Peak Chargeability",v:"48",u:"ms"},{l:"Background",v:"5–12",u:"ms"},
+        {l:"Anomaly Depth",v:"15–25",u:"m"},{l:"Target",v:"Sulphide",u:""}],
+    sp:[{l:"SP Minimum",v:s?.min,u:"mV"},{l:"Peak Anomaly",v:"−180",u:"mV"},
+        {l:"Source Depth Est.",v:"22",u:"m"},{l:"Source Model",v:"Sulphide",u:""}],
+    em:[{l:"Peak In-Phase",v:s?.max,u:"ppm"},{l:"Conductor Depth",v:"35",u:"m"},
+        {l:"Conductance",v:"Good",u:""},{l:"Target",v:"Ore/Aquifer",u:""}],
+    gpr:[{l:"Antenna Freq.",v:"250",u:"MHz"},{l:"Max Depth",v:"8",u:"m"},
+         {l:"Wave Velocity",v:"0.12",u:"m/ns"},{l:"Target",v:"Void/Pipe",u:""}],
+    magnetic:[{l:"Min TMF",v:s?.min,u:"nT"},{l:"Max TMF",v:s?.max,u:"nT"},
+              {l:"Amplitude",v:s?.spread,u:"nT"},{l:"Source Depth",v:"28",u:"m"}],
+    gravity:[{l:"Min Bouguer",v:s?.min,u:"mGal"},{l:"Max Bouguer",v:s?.max,u:"mGal"},
+             {l:"Range",v:s?.spread,u:"mGal"},{l:"Anomaly Depth",v:"40",u:"m"}],
+    sref:[{l:"V₁ (Soil)",v:"320",u:"m/s"},{l:"V₂ (Layer 2)",v:"1800",u:"m/s"},
+          {l:"Refractor Depth",v:"22",u:"m"},{l:"Crossover Dist.",v:"30",u:"m"}],
+    srefl:[{l:"Reflector TWT",v:"0.82",u:"s"},{l:"Depth (VRMS)",v:"870",u:"m"},
+           {l:"Interval Vel.",v:"2125",u:"m/s"},{l:"Structural Dip",v:"2–4°",u:""}],
+  })[id]||[];
+}
+
+/* ═══════════════════════════════════════════════════════════
+   METHOD GUIDES  (original text preserved + 6 new)
+═══════════════════════════════════════════════════════════ */
+const GUIDE={
+  ves:`<b style="color:var(--txt)">Rising curve</b> → resistivity increases with depth<br>
+<b style="color:var(--txt)">H-type</b> (low middle) → conductive layer between resistive<br>
+<b style="color:var(--txt)">K-type</b> (high middle) → resistive layer between conductive<br>
+<b style="color:var(--txt)">A-type</b> → uniformly increasing resistivity<br>
+<b style="color:var(--txt)">Q-type</b> → uniformly decreasing resistivity<br>
+<span style="color:var(--acc)">Typical values (Ω·m):</span> Clay 1–20 · Sand 50–500 · Rock &gt;1000`,
+  ert:`<b style="color:var(--txt)">Low ρ zones</b> → clay, water-saturated, saline<br>
+<b style="color:var(--txt)">High ρ zones</b> → dry rock, gravel, air voids<br>
+<b style="color:var(--txt)">Lateral contrast</b> → faults, contacts, intrusions<br>
+<b style="color:var(--txt)">Depth sensitivity</b> ≈ electrode spacing × 0.17<br>
+<span style="color:var(--blu)">Array:</span> Dipole-Dipole preferred for lateral resolution`,
+  ip:`<b style="color:var(--txt)">Chargeability &gt;20 ms</b> → disseminated sulphide ore<br>
+<b style="color:var(--txt)">High IP + low ρ</b> → massive sulphide (pyrite/chalcopyrite)<br>
+<b style="color:var(--txt)">High IP + high ρ</b> → graphite or carbon in host rock<br>
+<span style="color:var(--amb)">Units:</span> ms (time domain) or mrad (frequency domain)`,
+  sp:`<b style="color:var(--txt)">Negative anomaly</b> → oxidising sulphide (Sato-Mooney model)<br>
+<b style="color:var(--txt)">Positive anomaly</b> → geothermal or groundwater flow<br>
+<b style="color:var(--txt)">Depth estimate</b> via half-width rule: d ≈ x₀.₅<br>
+<span style="color:var(--pur)">Typical ore range:</span> −50 to −500 mV`,
+  em:`<b style="color:var(--txt)">In-phase</b> → good conductors (sulphides, saline water)<br>
+<b style="color:var(--txt)">Quadrature</b> → poor conductors (wet clay)<br>
+<b style="color:var(--txt)">Conductor depth</b> ≈ half-width of anomaly peak<br>
+<span style="color:var(--org)">EM34 spacings:</span> 10 m (7.5 m depth) · 20 m (15 m) · 40 m (30 m)`,
+  gpr:`<b style="color:var(--txt)">Diffraction hyperbola</b> → buried point target (pipe/void)<br>
+<b style="color:var(--txt)">Horizontal reflector</b> → layer boundary or water table<br>
+<b style="color:var(--txt)">Depth</b> = (v × t) / 2 where v ≈ 0.06–0.15 m/ns<br>
+<span style="color:var(--pnk)">Higher frequency</span> → better resolution, less penetration`,
+  magnetic:`<b style="color:var(--txt)">Positive anomaly</b> → magnetic body (magnetite, BIF)<br>
+<b style="color:var(--txt)">Dipolar anomaly</b> → isolated magnetic source<br>
+<b style="color:var(--txt)">RTP transform</b> removes inclination effects<br>
+<span style="color:var(--amb)">Peters rule:</span> depth ≈ 1.6 × (distance from peak to half-max)`,
+  gravity:`<b style="color:var(--txt)">Negative Bouguer</b> → low-density body (salt, sediment)<br>
+<b style="color:var(--txt)">Positive Bouguer</b> → high-density intrusion or basement<br>
+<b style="color:var(--txt)">Bouguer correction</b> removes terrain/elevation effects<br>
+<span style="color:var(--pur)">1 mGal</span> ≈ 10⁻⁵ m/s² gravitational acceleration`,
+  sref:`<b style="color:var(--txt)">Crossover distance</b> → layer boundary depth indicator<br>
+<b style="color:var(--txt)">V₁ &lt; V₂ required</b> for head-wave refraction<br>
+<b style="color:var(--txt)">Depth:</b> h = Xc/2 × √((V₂−V₁)/(V₂+V₁))<br>
+<span style="color:var(--grn)">Typical:</span> Soil 200–600 · Sand 600–1500 · Rock &gt;2000 m/s`,
+  srefl:`<b style="color:var(--txt)">TWT depth:</b> d = (TWT × V_RMS) / 2<br>
+<b style="color:var(--txt)">NMO correction</b> removes offset-dependent moveout<br>
+<b style="color:var(--txt)">Strong reflector</b> → large acoustic impedance contrast<br>
+<span style="color:var(--org)">CMP stacking</span> improves signal-to-noise ratio`,
+};
+
+/* ═══════════════════════════════════════════════════════════
+   ANOMALY SUMMARY TABLES  (NEW — detailed per-method)
+═══════════════════════════════════════════════════════════ */
+function anomalyHTML(id){
+  if(id==="ves"){
+    /* Build stratigraphy rows with cumulative depths */
+    let cum=0;
+    const rows=VES_LAYERS.map(l=>{
+      const top=cum;
+      const base=l.thick?cum+l.thick:null;
+      if(l.thick) cum+=l.thick;
+      return `<tr>
+        <td style="color:var(--mut)">${l.n}</td>
+        <td style="font-weight:500">${l.name}</td>
+        <td style="color:var(--amb)">${l.res.toLocaleString()} Ω·m</td>
+        <td style="color:var(--blu)">${l.thick?l.thick+" m":"—"}</td>
+        <td style="color:var(--mut)">${top.toFixed(1)} m</td>
+        <td style="color:var(--mut)">${base!==null?base.toFixed(1)+" m":"∞"}</td>
+        <td style="color:var(--pur)">${l.dens} g/cm³</td>
+        <td><span class="ab ${l.cls}">${l.lbl}</span></td>
+        <td>${l.target?`<span class="ab grn">${l.target}</span>`:""}</td>
+      </tr>`;
+    }).join("");
+    return `
+    <div style="overflow-x:auto">
+    <table class="lt">
+      <thead><tr>
+        <th style="color:var(--acc)">#</th>
+        <th style="color:var(--acc)">Layer Name</th>
+        <th style="color:var(--acc)">Resistivity</th>
+        <th style="color:var(--acc)">Thickness</th>
+        <th style="color:var(--acc)">Depth Top</th>
+        <th style="color:var(--acc)">Depth Base</th>
+        <th style="color:var(--acc)">Density</th>
+        <th style="color:var(--acc)">Geological Interpretation</th>
+        <th style="color:var(--acc)">Target</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  }
+  const tbls={
+    ert:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--blu)">Zone</th><th style="color:var(--blu)">Position</th><th style="color:var(--blu)">Depth</th><th style="color:var(--blu)">Resistivity</th><th style="color:var(--blu)">Interpretation</th></tr></thead><tbody>
+      <tr><td>A1</td><td>0–30 m</td><td>0–8 m</td><td style="color:var(--amb)">80–250 Ω·m</td><td><span class="ab amb">Dry overburden / laterite</span></td></tr>
+      <tr><td>A2</td><td>40–80 m</td><td>8–20 m</td><td style="color:var(--blu)">8–25 Ω·m</td><td><span class="ab pur">Saturated clay / weathered zone</span></td></tr>
+      <tr><td>A3 ★</td><td>55–75 m</td><td>14–28 m</td><td style="color:var(--acc)">180–400 Ω·m</td><td><span class="ab grn">Fracture zone / aquifer target</span></td></tr>
+      <tr><td>A4</td><td>90–120 m</td><td>0–5 m</td><td style="color:var(--red)">1200+ Ω·m</td><td><span class="ab red">Compact basement outcrop</span></td></tr>
+      </tbody></table></div>`,
+    ip:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--amb)">Zone</th><th style="color:var(--amb)">Depth</th><th style="color:var(--amb)">Chargeability</th><th style="color:var(--amb)">Resistivity</th><th style="color:var(--amb)">Density Est.</th><th style="color:var(--amb)">Interpretation</th></tr></thead><tbody>
+      <tr><td>Background</td><td>0–10 m</td><td style="color:var(--mut)">5–12 ms</td><td>80 Ω·m</td><td>1.70 g/cm³</td><td><span class="ab amb">Clay / soil</span></td></tr>
+      <tr><td>★ Anomaly A</td><td>15–25 m</td><td style="color:var(--amb)">38–48 ms</td><td>25 Ω·m</td><td>2.85 g/cm³</td><td><span class="ab grn">Disseminated sulphide (pyrite/chalcopyrite)</span></td></tr>
+      <tr><td>Background</td><td>&gt;25 m</td><td style="color:var(--mut)">3–8 ms</td><td>4500 Ω·m</td><td>2.65 g/cm³</td><td><span class="ab red">Crystalline basement</span></td></tr>
+      </tbody></table></div>
+      <div class="ibox" style="border-left-color:var(--amb)"><h4 style="color:var(--amb)">Ore Body Estimate</h4>Peak chargeability 38–48 ms at 15–25 m depth is diagnostic of disseminated sulphide mineralisation. Estimated ore body volume ~2,500 m³. Low resistivity (25 Ω·m) companion confirms metallic conductor. Recommended follow-up: borehole at anomaly centre with geochemical sampling.</div>`,
+    sp:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--pur)">Parameter</th><th style="color:var(--pur)">Value</th><th style="color:var(--pur)">Method</th><th style="color:var(--pur)">Assessment</th></tr></thead><tbody>
+      <tr><td>SP Minimum</td><td style="color:var(--pur)">−180 mV</td><td>Direct measurement</td><td><span class="ab pur">Strong negative anomaly</span></td></tr>
+      <tr><td>Depth estimate</td><td style="color:var(--amb)">~22 m</td><td>Half-width rule (x₀.₅)</td><td><span class="ab grn">Ore zone depth</span></td></tr>
+      <tr><td>Source type</td><td>Oxidising sulphide body</td><td>Sato-Mooney model</td><td><span class="ab amb">Electrochemical oxidation cell</span></td></tr>
+      <tr><td>Anomaly half-width</td><td>~22 m</td><td>Profile measurement</td><td><span class="ab blu">Equals depth estimate</span></td></tr>
+      </tbody></table></div>`,
+    em:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--org)">Parameter</th><th style="color:var(--org)">Value</th><th style="color:var(--org)">Assessment</th></tr></thead><tbody>
+      <tr><td>Peak In-Phase</td><td style="color:var(--org)">~620 ppm</td><td><span class="ab grn">Strong conductor confirmed</span></td></tr>
+      <tr><td>Conductor depth (half-width)</td><td style="color:var(--amb)">35 m</td><td><span class="ab blu">Calculated from profile</span></td></tr>
+      <tr><td>Strike direction</td><td>N–S</td><td><span class="ab amb">Along survey traverse</span></td></tr>
+      <tr><td>Conductor classification</td><td>Sulphide / Fault zone</td><td><span class="ab grn">Low Q/I ratio → good conductor</span></td></tr>
+      </tbody></table></div>`,
+    gpr:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--pnk)">Feature</th><th style="color:var(--pnk)">Position</th><th style="color:var(--pnk)">Depth</th><th style="color:var(--pnk)">Interpretation</th></tr></thead><tbody>
+      <tr><td>Diffraction hyperbola</td><td>Station 10 m</td><td>2.4 m</td><td><span class="ab red">Buried pipe / void / utility</span></td></tr>
+      <tr><td>Continuous reflector</td><td>All stations</td><td>4.5 m</td><td><span class="ab blu">Water table / lithological boundary</span></td></tr>
+      <tr><td>Signal attenuation zone</td><td>&gt;5 m depth</td><td>—</td><td><span class="ab amb">Clay-rich layer causing signal loss</span></td></tr>
+      </tbody></table></div>`,
+    magnetic:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--amb)">Parameter</th><th style="color:var(--amb)">Value</th><th style="color:var(--amb)">Method</th><th style="color:var(--amb)">Assessment</th></tr></thead><tbody>
+      <tr><td>Peak TMI</td><td style="color:var(--amb)">+450 nT</td><td>Direct measurement</td><td><span class="ab grn">Magnetic high — source body</span></td></tr>
+      <tr><td>Source depth</td><td style="color:var(--amb)">28 m</td><td>Peters half-slope rule</td><td><span class="ab blu">Fe-oxide / BIF body</span></td></tr>
+      <tr><td>Susceptibility contrast</td><td>~0.05 SI</td><td>Forward modelling</td><td><span class="ab amb">Magnetite or haematite ore</span></td></tr>
+      <tr><td>Anomaly shape</td><td>Dipolar</td><td>Profile shape analysis</td><td><span class="ab pur">Isolated magnetic source</span></td></tr>
+      </tbody></table></div>`,
+    gravity:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--pur)">Parameter</th><th style="color:var(--pur)">Value</th><th style="color:var(--pur)">Method</th><th style="color:var(--pur)">Assessment</th></tr></thead><tbody>
+      <tr><td>Peak Bouguer</td><td style="color:var(--pur)">+2.8 mGal</td><td>Direct measurement</td><td><span class="ab grn">Gravity high — dense body</span></td></tr>
+      <tr><td>Body depth (half-width)</td><td style="color:var(--amb)">40 m</td><td>Half-width rule</td><td><span class="ab blu">Mafic intrusion / ore body</span></td></tr>
+      <tr><td>Excess mass</td><td>~1.8×10⁸ kg</td><td>Gauss theorem</td><td><span class="ab amb">Dense anomalous body</span></td></tr>
+      <tr><td>Density contrast</td><td>0.3 g/cm³</td><td>Forward model</td><td><span class="ab pur">vs. host rock — iron ore / chromite?</span></td></tr>
+      </tbody></table></div>`,
+    sref:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--grn)">Layer</th><th style="color:var(--grn)">Velocity</th><th style="color:var(--grn)">Depth</th><th style="color:var(--grn)">Thickness</th><th style="color:var(--grn)">Density Est.</th><th style="color:var(--grn)">Interpretation</th></tr></thead><tbody>
+      <tr><td>Layer 1 (V₁)</td><td style="color:var(--amb)">320 m/s</td><td>0–22 m</td><td>22 m</td><td>1.70 g/cm³</td><td><span class="ab amb">Dry loose soil / laterite</span></td></tr>
+      <tr><td>Layer 2 (V₂)</td><td style="color:var(--grn)">1800 m/s</td><td>&gt;22 m</td><td>half-space</td><td>2.05 g/cm³</td><td><span class="ab grn">Saturated sand / weathered rock</span></td></tr>
+      <tr><td>Crossover distance</td><td>—</td><td>—</td><td>30 m</td><td>—</td><td><span class="ab blu">Layer boundary indicator</span></td></tr>
+      </tbody></table></div>`,
+    srefl:`<div style="overflow-x:auto"><table class="lt">
+      <thead><tr><th style="color:var(--org)">Reflector</th><th style="color:var(--org)">TWT</th><th style="color:var(--org)">Depth</th><th style="color:var(--org)">Interval Vel.</th><th style="color:var(--org)">Interpretation</th></tr></thead><tbody>
+      <tr><td>Primary reflector</td><td style="color:var(--org)">820–848 ms</td><td>~870 m</td><td>2125 m/s</td><td><span class="ab grn">Sedimentary unit / basement unconformity</span></td></tr>
+      <tr><td>Structural dip</td><td>—</td><td>—</td><td>—</td><td><span class="ab blu">2–4° — gently dipping</span></td></tr>
+      </tbody></table></div>`,
+  };
+  return tbls[id]||"";
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AI CALL  (exact original streaming pattern)
+═══════════════════════════════════════════════════════════ */
+async function callAI(prompt,onChunk){
+  if(!API_KEY){showKeyOverlay();throw new Error("No API key — please enter your Anthropic key.");}
+
+  /* ── attempt streaming request ── */
+  let res;
+  try{
+    res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "x-api-key":API_KEY,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-allow-browser":"true"
+      },
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",max_tokens:1400,stream:true,
+        system:`You are GeoPhysAI — an expert geophysicist specialising in applied geophysics.
+Interpret field survey data with precision and professional terminology.
+Structure your response as:
+1. DATA QUALITY ASSESSMENT — comment on data spread, RMS, coverage
+2. GEOPHYSICAL INTERPRETATION — curve type, anomaly character
+3. SUBSURFACE MODEL — list EVERY detected layer/anomaly with:
+   • Layer number  • Depth range (m)  • Resistivity / field value (Ω·m / nT / mGal / ms)
+   • Thickness (m)  • Estimated density (g/cm³)  • Geological identity
+4. TARGET ASSESSMENT — exact depth to aquifer or ore body, confidence level, coordinates if available
+5. RECOMMENDATIONS — borehole depth, screen interval, follow-up surveys
+Be concise, technical, actionable. Use Ω·m, nT, mGal, ms correctly.`,
+        messages:[{role:"user",content:prompt}],
+      }),
+    });
+  }catch(fetchErr){
+    /* Network / CORS failure — give a clear actionable message */
+    throw new Error(
+      "Network error — cannot reach Anthropic API.\n\n"+
+      "Most common fix: open this file via a local server, not by double-clicking.\n"+
+      "In your terminal, run:  python -m http.server 8000\n"+
+      "Then open:  http://localhost:8000/GeoPhysAI_v3_fixed.html\n\n"+
+      "(Original error: "+fetchErr.message+")"
+    );
+  }
+
+  /* ── check HTTP status ── */
+  if(!res.ok){
+    let errMsg=`HTTP ${res.status}`;
+    try{const j=await res.json();errMsg=j.error?.message||errMsg;}catch{}
+    if(res.status===401) errMsg="Invalid API key — please click 🔑 API Key and re-enter your key.";
+    if(res.status===429) errMsg="Rate limit / quota exceeded — check your Anthropic billing at console.anthropic.com.";
+    throw new Error(errMsg);
+  }
+
+  /* ── stream response ── */
+  const reader=res.body.getReader(),dec=new TextDecoder();
+  let full="";
+  while(true){
+    const{done,value}=await reader.read();if(done)break;
+    for(const line of dec.decode(value).split("\n").filter(l=>l.startsWith("data:"))){
+      try{
+        const j=JSON.parse(line.slice(5));
+        if(j.type==="content_block_delta"&&j.delta?.text){full+=j.delta.text;onChunk(full);}
+      }catch{}
+    }
+  }
+  return full;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   BUILD PROMPT  (enhanced over original)
+═══════════════════════════════════════════════════════════ */
+function buildPrompt(id){
+  const d=S.data[id],s=computeStats(id);
+  const names={ves:"Vertical Electrical Sounding (Schlumberger array)",ert:"Electrical Resistivity Tomography (dipole-dipole)",
+    ip:"Induced Polarization Survey",sp:"Self-Potential Survey",em:"Electromagnetic Survey (EM34)",
+    gpr:"Ground Penetrating Radar (250 MHz)",magnetic:"Ground Magnetic Survey (TMF + RTP)",
+    gravity:"Ground Gravity Survey (Bouguer + Free-Air)",sref:"Seismic Refraction Survey",srefl:"Seismic Reflection Survey"};
+  const extras={
+    ves:`\nInterpreted 5-layer model (for reference):\n${VES_LAYERS.map(l=>`L${l.n}: ${l.name} — ${l.res} Ω·m, ${l.thick?l.thick+"m thick":""}, ρ=${l.dens} g/cm³`).join("\n")}\nCurrent RMS misfit: ${VES_RMS}%\nDepth to aquifer: 34–46 m  Aquifer thickness: 12 m  Aquifer resistivity: 220 Ω·m`,
+    ip:"\nNote: chargeability >20 ms is diagnostic of sulphide mineralisation.",
+    sp:"\nNote: Negative SP anomaly → oxidising sulphide body (Sato-Mooney electrochemical model).",
+  };
+  return `Method: ${names[id]||id.toUpperCase()}
+Data statistics: min=${s.min}, max=${s.max}, range=${s.spread}, n=${s.points} points
+Sample data (first 20 pts): ${JSON.stringify(d.slice(0,20))}${extras[id]||""}
+
+Provide complete professional geophysical interpretation including layer count, densities, depths, and target assessment.`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════ */
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function chartTitle(id){return{ves:"Log-Log Sounding Curve",ert:"Resistivity Pseudo-Section",ip:"Chargeability & Resistivity",
+  sp:"Self-Potential Profile",em:"In-Phase / Quadrature",gpr:"Reflected Amplitude Profile",
+  magnetic:"TMF / RTP Profile",gravity:"Bouguer Anomaly Profile",sref:"Travel-Time Plot",srefl:"TWT Profile"}[id]||"Profile";}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER TABS
+═══════════════════════════════════════════════════════════ */
+function renderTabs(){
+  const el=document.getElementById("tabs");el.innerHTML="";
+  METHODS.forEach(m=>{
+    const b=document.createElement("button");
+    b.className="tab-btn"+(m.id===S.active?" tab-on":"");
+    b.style.setProperty("--tc",m.color);
+    b.innerHTML=`<span style="margin-right:6px">${m.icon}</span>${m.label}`;
+    b.onclick=()=>{S.active=m.id;render();};
+    el.appendChild(b);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN RENDER
+═══════════════════════════════════════════════════════════ */
+function render(){
+  renderTabs();
+  if(S.active==="terrain"){renderTerrain();return;}
+  const id=S.active;
+  const method=METHODS.find(m=>m.id===id);
+  const col=method.color;
+  const stats=computeStats(id);
+  const d=S.data[id]||[];
+  const metrics=metricDefs(id);
+
+  /* metric cards HTML */
+  const mHtml=metrics.map(m=>`
+    <div class="metric">
+      <div class="m-lbl">${m.l}</div>
+      <div class="m-val" style="color:${col}">${m.v??'—'}<span class="m-unit">${m.u}</span></div>
+    </div>`).join("")+`
+    <div class="metric">
+      <div class="m-lbl">Data Points</div>
+      <div class="m-val" style="color:${C.muted}">${stats?.points??'—'}<span class="m-unit">pts</span></div>
+    </div>`;
+
+  /* AI panel HTML */
+  let aiHtml="";
+  if(S.error[id]) aiHtml+=`<div style="color:var(--red);font-size:12px;margin-bottom:10px">${esc(S.error[id])}</div>`;
+  if(S.aiText[id]){
+    aiHtml+=`<div class="ai-out">${esc(S.aiText[id])}${S.loading[id]?`<span class="blink" style="color:${col}">▋</span>`:""}</div>`;
+  }else if(S.loading[id]){
+    aiHtml+=`<div style="display:flex;align-items:center;gap:10px;color:var(--mut);font-size:12px"><span class="spin">⟳</span>Analysing geophysical signature…</div>`;
+  }else{
+    aiHtml+=`<div class="ai-idle">
+      <div style="font-size:32px">${method.icon}</div>
+      <div>Click <span style="color:${col}">Run AI Analysis</span> to interpret your data</div>
+      <div style="font-size:10px;color:var(--bdr);margin-top:4px">AI will model subsurface layers with depths, densities,<br>resistivities, RMS fit, and drill target recommendations</div>
+    </div>`;
+  }
+
+  /* data table HTML (original style) */
+  let dtHtml=`<div style="color:var(--mut);font-size:12px">No data loaded</div>`;
+  if(d.length){
+    const keys=Object.keys(d[0]);
+    dtHtml=`<div class="dt-wrap"><table class="dt">
+      <thead><tr>${keys.map(k=>`<th style="color:${col}">${k.toUpperCase()}</th>`).join("")}</tr></thead>
+      <tbody>${d.slice(0,20).map((r,i)=>`<tr style="background:${i%2?"transparent":"rgba(255,255,255,.02)"}">
+        ${Object.values(r).map(v=>`<td>${typeof v==="number"?v.toFixed(2):v}</td>`).join("")}</tr>`).join("")}
+      </tbody></table></div>`;
+  }
+
+  /* VES extra panels (NEW) */
+  let vesExtra="";
+  if(id==="ves"){
+    vesExtra=`
+    <!-- VES LAYER TABLE -->
+    <div class="panel">
+      <div class="sec" style="color:${col}">Detailed Layer Stratigraphy — 1D Earth Model (${VES_LAYERS.length} Layers · RMS = ${VES_RMS}%)</div>
+      ${anomalyHTML("ves")}
+    </div>
+    <!-- VES AQUIFER PANEL -->
+    <div class="g2">
+      <div class="panel">
+        <div class="sec" style="color:${col}">Aquifer / Ore Body — Target Analysis</div>
+        <div class="g4" style="margin-bottom:14px">
+          <div class="metric"><div class="m-lbl">Depth to Aquifer Top</div><div class="m-val" style="color:var(--grn);font-size:18px">34.0<span class="m-unit">m</span></div></div>
+          <div class="metric"><div class="m-lbl">Depth to Aquifer Base</div><div class="m-val" style="color:var(--grn);font-size:18px">46.0<span class="m-unit">m</span></div></div>
+          <div class="metric"><div class="m-lbl">Aquifer Thickness</div><div class="m-val" style="color:var(--acc);font-size:18px">12<span class="m-unit">m</span></div></div>
+          <div class="metric"><div class="m-lbl">Aquifer Resistivity</div><div class="m-val" style="color:var(--acc);font-size:18px">220<span class="m-unit">Ω·m</span></div></div>
+        </div>
+        <div class="g4">
+          <div class="metric"><div class="m-lbl">Aquifer Density Est.</div><div class="m-val" style="color:var(--pur);font-size:18px">2.10<span class="m-unit">g/cm³</span></div></div>
+          <div class="metric"><div class="m-lbl">Curve Type</div><div class="m-val" style="color:var(--amb);font-size:18px">KH<span class="m-unit">type</span></div></div>
+          <div class="metric"><div class="m-lbl">Model RMS Fit</div><div class="m-val" style="color:var(--acc);font-size:18px">${VES_RMS}<span class="m-unit">%</span></div></div>
+          <div class="metric"><div class="m-lbl">Recommended Depth</div><div class="m-val" style="color:var(--grn);font-size:18px">50<span class="m-unit">m</span></div></div>
+        </div>
+        <div class="ibox" style="border-left-color:var(--grn)">
+          <h4 style="color:var(--grn)">Hydrogeological Assessment</h4>
+          Fractured basement aquifer confirmed at <strong style="color:var(--grn)">34–46 m depth</strong>. Resistivity of 220 Ω·m indicates fresh, potable groundwater.
+          Overlying clay aquitard (Layer 3, 11 m thick, 1.95 g/cm³) provides natural protection from surface contamination.
+          <br><br><strong style="color:var(--acc)">Borehole recommendation:</strong> Drill to 50 m · Case 6″ to 32 m · Screen 34–46 m.
+          Expected yield: moderate–high. Water quality: likely fresh (non-saline). Confirm with Dar Zarrouk parameter analysis.
+        </div>
+      </div>
+      <div class="panel">
+        <div class="sec" style="color:${col}">Method Guide — VES Curve Types</div>
+        <div style="font-size:11px;line-height:1.9;color:var(--mut)">${GUIDE.ves}</div>
+      </div>
+    </div>`;
+  }
+
+  /* full page HTML */
+  document.getElementById("body").innerHTML=`
+  <!-- METHOD HEADER (exact original layout) -->
+  <div class="mhdr">
+    <div>
+      <div class="mhdr-title" style="color:${col}">${method.icon} ${method.full}</div>
+      <div class="mhdr-sub">${d.length} data points loaded${S.uploadName[id]?` · <span style="color:var(--acc)">${esc(S.uploadName[id])}</span>`:""}</div>
+    </div>
+    <div class="acts">
+      <input type="file" id="fin" accept=".csv,.txt" style="display:none" onchange="handleFile(event,'${id}')"/>
+      <button class="btn" onclick="document.getElementById('fin').click()">Upload CSV</button>
+      <button class="btn btn-mut" onclick="resetData('${id}')">Reset</button>
+      <button class="btn btn-pri" id="run-btn"
+        style="border-color:${col};background:${col};color:#070d0f"
+        onclick="runAnalysis('${id}')"
+        ${S.loading[id]||!stats?"disabled":""}>
+        ${S.loading[id]?`<span class="spin">⟳</span> Analysing…`:"▶ Run AI Analysis"}
+      </button>
+    </div>
+  </div>
+
+  <!-- CSV HINT (original style) -->
+  <div class="csv-hint" style="background:${col}08;border:1px solid ${col}25">
+    <span style="color:${col}">CSV FORMAT</span>
+    <code style="color:var(--txt)">${CSV_TMPL[id]||""}</code>
+    <span>— ${d.length>0?"✓ Data loaded":"No data — using sample"}</span>
+  </div>
+
+  <!-- METRICS (original layout, now 5 cards) -->
+  <div class="g5">${mHtml}</div>
+
+  <!-- CHART + AI (original 2-column layout) -->
+  <div class="g2">
+    <div class="panel">
+      <div class="sec" style="color:${col}">${method.label} · ${chartTitle(id)}</div>
+      <div class="chart-box"><canvas id="mc"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="sec" style="color:${col}">AI Interpretation</div>
+      <div id="ai-panel">${aiHtml}</div>
+    </div>
+  </div>
+
+  ${vesExtra}
+
+  <!-- DATA TABLE + GUIDE (original second row) -->
+  <div class="g12">
+    <div class="panel">
+      <div class="sec" style="color:${col}">Raw Data Preview</div>
+      ${dtHtml}
+    </div>
+    <div class="panel">
+      <div class="sec" style="color:${col}">Method Guide</div>
+      <div style="font-size:11px;line-height:1.9;color:var(--mut)">${GUIDE[id]||""}</div>
+    </div>
+  </div>
+
+  <!-- ANOMALY SUMMARY TABLE (NEW for non-VES methods) -->
+  ${id!=="ves"?`<div class="panel">
+    <div class="sec" style="color:${col}">Anomaly &amp; Target Summary</div>
+    ${anomalyHTML(id)}
+  </div>`:""}`;
+
+  requestAnimationFrame(()=>drawChart(id));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHART.JS  (mirrors original Recharts charts)
+═══════════════════════════════════════════════════════════ */
+function drawChart(id){
+  const cvs=document.getElementById("mc");if(!cvs) return;
+  if(S.chartInst){S.chartInst.destroy();S.chartInst=null;}
+  const d=S.data[id];if(!d||!d.length) return;
+  const col=METHODS.find(m=>m.id===id).color;
+  const go={color:"rgba(255,255,255,0.04)"};
+  const tk={color:C.muted,font:{size:10,family:"'IBM Plex Mono',monospace"}};
+  const tt={backgroundColor:C.panel,borderColor:C.border,borderWidth:1,titleColor:C.muted,bodyColor:col,padding:8};
+
+  const configs={
+    ves:{type:"line",data:{labels:d.map(r=>r.ab2),datasets:[
+        {label:"App. Resistivity (Ω·m)",data:d.map(r=>r.rho_a),borderColor:col,backgroundColor:col+"15",
+         pointBackgroundColor:col,pointRadius:4,tension:.3,borderWidth:2.5,fill:false}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{type:"logarithmic",title:{display:true,text:"AB/2 (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y:{type:"logarithmic",title:{display:true,text:"ρₐ (Ω·m)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
+
+    ert:{type:"bubble",data:{datasets:[{label:"Resistivity",
+        data:d.map(r=>({x:r.x,y:r.depth,r:6})),
+        backgroundColor:d.map(r=>r.rho>50?"rgba(255,77,77,.65)":r.rho>30?"rgba(245,166,35,.65)":"rgba(56,189,248,.65)"),
+        borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{title:{display:true,text:"Distance (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y:{title:{display:true,text:"Pseudo-depth (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+      plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:p=>`x:${p.parsed.x}m  depth:${p.parsed.y}m`}}}}},
+
+    ip:{type:"line",data:{labels:d.map(r=>r.spacing),datasets:[
+        {label:"Chargeability (ms)",data:d.map(r=>r.chargeability),borderColor:col,backgroundColor:col+"15",tension:.4,borderWidth:2,pointRadius:4,pointBackgroundColor:col,yAxisID:"y"},
+        {label:"Resistivity (Ω·m)",data:d.map(r=>r.resistivity),borderColor:"#818cf8",borderDash:[4,3],tension:.4,borderWidth:1.5,pointRadius:0,yAxisID:"y1"}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{title:{display:true,text:"Electrode Spacing (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y:{title:{display:true,text:"Chargeability (ms)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y1:{position:"right",title:{display:true,text:"Resistivity (Ω·m)",color:C.muted,font:{size:11}},ticks:tk,grid:{drawOnChartArea:false}}},
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
+
+    sp:{type:"line",data:{labels:d.map(r=>r.station),datasets:[
+        {label:"SP (mV)",data:d.map(r=>r.sp),borderColor:col,backgroundColor:col+"15",tension:.4,borderWidth:2,pointRadius:3,fill:true}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{title:{display:true,text:"Station (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y:{title:{display:true,text:"SP (mV)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
+
+    em:{type:"line",data:{labels:d.map(r=>r.station),datasets:[
+        {label:"In-Phase (ppm)",data:d.map(r=>r.inphase),borderColor:col,backgroundColor:col+"15",tension:.4,borderWidth:2,pointRadius:3},
+        {label:"Quadrature (ppm)",data:d.map(r=>r.quadrature),borderColor:"#818cf8",borderDash:[5,3],tension:.4,borderWidth:1.5,pointRadius:0}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{title:{display:true,text:"Station (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y:{title:{display:true,text:"Response (ppm)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
+
+    gpr:{type:"line",data:{labels:d.map(r=>r.distance),datasets:[
+        {label:"Amplitude (dB)",data:d.map(r=>r.amplitude),borderColor:col,backgroundColor:col+"15",tension:.4,borderWidth:2,pointRadius:3,fill:true}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{title:{display:true,text:"Distance (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y:{title:{display:true,text:"Amplitude (dB)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
+
+    magnetic:(()=>{
+      /* detrend: subtract mean so anomaly wiggle is visible, not buried in regional field */
+      const tmfVals=d.map(r=>r.tmf).filter(v=>!isNaN(v));
+      const rtpVals=d.map(r=>r.rtp).filter(v=>!isNaN(v));
+      const tmfMean=tmfVals.reduce((a,b)=>a+b,0)/(tmfVals.length||1);
+      const rtpMean=rtpVals.reduce((a,b)=>a+b,0)/(rtpVals.length||1);
+      const tmfAnom=d.map(r=>isNaN(r.tmf)?null:+(r.tmf-tmfMean).toFixed(2));
+      const rtpAnom=rtpVals.length>0?d.map(r=>isNaN(r.rtp)?null:+(r.rtp-rtpMean).toFixed(2)):null;
+      const datasets=[{label:"TMF Anomaly (nT)",data:tmfAnom,borderColor:col,backgroundColor:col+"18",fill:true,borderWidth:2,tension:.3,pointRadius:0}];
+      if(rtpAnom) datasets.push({label:"RTP Anomaly (nT)",data:rtpAnom,borderColor:"#f97316",borderDash:[5,3],borderWidth:1.5,tension:.3,pointRadius:0,fill:false});
+      return{type:"line",data:{labels:d.map(r=>r.station),datasets},
+        options:{responsive:true,maintainAspectRatio:false,scales:{
+          x:{title:{display:true,text:"Station (m)",color:C.muted,font:{size:11}},ticks:{...tk,maxTicksLimit:8},grid:go},
+          y:{title:{display:true,text:"Magnetic Anomaly (nT)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+        plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:{...tt,callbacks:{
+          label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y>0?"+":""}${ctx.parsed.y} nT  |  abs: ${(ctx.parsed.y+(ctx.datasetIndex===0?tmfMean:rtpMean)).toFixed(1)} nT`
+        }}}}}; })(),
+
+    gravity:{type:"line",data:{labels:d.map(r=>r.station),datasets:[
+        {label:"Bouguer (mGal)",data:d.map(r=>r.bouguer),borderColor:col,backgroundColor:col+"18",fill:true,borderWidth:2,tension:.3,pointRadius:0},
+        {label:"Free-Air (mGal)",data:d.map(r=>r.freeair),borderColor:"#818cf8",backgroundColor:"#818cf812",fill:true,borderDash:[4,3],borderWidth:1.5,tension:.3,pointRadius:0}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{title:{display:true,text:"Station (m)",color:C.muted,font:{size:11}},ticks:{...tk,maxTicksLimit:8},grid:go},
+        y:{title:{display:true,text:"Anomaly (mGal)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
+
+    sref:{type:"line",data:{labels:d.map(r=>r.distance),datasets:[
+        {label:"First Arrival (ms)",data:d.map(r=>r.traveltime),borderColor:col,backgroundColor:col+"18",borderWidth:2,tension:.1,pointRadius:4,pointBackgroundColor:col}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{title:{display:true,text:"Distance (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y:{title:{display:true,text:"Travel Time (ms)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
+
+    srefl:{type:"line",data:{labels:d.map(r=>r.cmp),datasets:[
+        {label:"TWT (ms)",data:d.map(r=>r.twt),borderColor:col,backgroundColor:col+"15",borderWidth:2,tension:.3,pointRadius:3}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{
+        x:{title:{display:true,text:"CMP Position (m)",color:C.muted,font:{size:11}},ticks:tk,grid:go},
+        y:{reverse:true,title:{display:true,text:"Two-Way Time (ms)",color:C.muted,font:{size:11}},ticks:tk,grid:go}},
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
+  };
+  if(configs[id]) S.chartInst=new Chart(cvs,configs[id]);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FILE UPLOAD  (mirrors original handleFile)
+═══════════════════════════════════════════════════════════ */
+function handleFile(e,id){
+  const file=e.target.files[0];if(!file) return;
+  S.uploadName[id]=file.name;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const lines=ev.target.result.split("\n").filter(l=>l.trim());
+      const rawHeaders=lines[0].split(",").map(h=>h.trim().toLowerCase());
+
+      /* ── expected column names per method ── */
+      const expectedKeys={
+        ves:["ab2","rho_a"], ert:["x","depth","rho"],
+        ip:["spacing","chargeability","resistivity"], sp:["station","sp"],
+        em:["station","inphase","quadrature"], gpr:["distance","amplitude"],
+        magnetic:["station","tmf","rtp"], gravity:["station","bouguer","freeair"],
+        sref:["distance","traveltime"], srefl:["cmp","twt"],
+      };
+      const wantedKeys=expectedKeys[id]||[];
+
+      /* check if headers match the expected schema */
+      const headersMatch=wantedKeys.length>0&&wantedKeys.every(k=>rawHeaders.includes(k));
+
+      if(headersMatch){
+        /* ── named-column parse (original v3 behaviour) ── */
+        const rows=lines.slice(1).map(l=>{
+          const vals=l.split(",");const obj={};
+          rawHeaders.forEach((h,i)=>{const n=parseFloat(vals[i]);obj[h]=isNaN(n)?vals[i]?.trim()||"":n;});
+          return obj;
+        }).filter(r=>Object.values(r).some(v=>typeof v==="number"&&!isNaN(v)));
+        if(rows.length===0){S.error[id]="CSV parsed but no numeric rows found.";render();return;}
+        S.data[id]=rows;S.aiText[id]="";render();
+      }else{
+        /* ── two-column fallback (v2 behaviour): col0=x, col1=y ── */
+        const fallbackKey=wantedKeys;
+        const k0=wantedKeys[0]||rawHeaders[0]||"x";
+        const k1=wantedKeys[1]||rawHeaders[1]||"y";
+        const rows=[];
+        /* try to detect if row 0 is a header by checking if first cell is non-numeric */
+        const startRow=isNaN(parseFloat(lines[0].split(",")[0]))?1:0;
+        for(let i=startRow;i<lines.length;i++){
+          const parts=lines[i].split(",");
+          const a=parseFloat(parts[0]),b=parseFloat(parts[1]);
+          if(!isNaN(a)&&!isNaN(b)){const obj={};obj[k0]=a;obj[k1]=b;rows.push(obj);}
+        }
+        if(rows.length===0){S.error[id]=`Could not parse CSV. Use headers: ${wantedKeys.join(", ")} — or two plain numeric columns.`;render();return;}
+        S.data[id]=rows;S.aiText[id]="";
+        S.error[id]=``;/* clear any previous error */
+        render();
+        /* friendly notice */
+        const panel=document.getElementById("ai-panel");
+        if(panel) panel.innerHTML=`<div style="color:var(--amb);font-size:11px;line-height:1.7">
+          ✅ <strong>${rows.length} rows</strong> loaded (two-column fallback — columns mapped as <code>${k0}</code> / <code>${k1}</code>).<br>
+          For best results use headers: <code>${(expectedKeys[id]||[]).join(", ")}</code><br>
+          Click <strong>Run AI Analysis</strong> to interpret.
+        </div>`;
+      }
+    }catch(err){S.error[id]="Failed to parse CSV: "+err.message;render();}
+  };
+  reader.readAsText(file);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESET  (mirrors original resetData)
+═══════════════════════════════════════════════════════════ */
+function resetData(id){
+  S.data[id]=SAMPLE[id]?[...SAMPLE[id]]:[];
+  S.aiText[id]="";S.uploadName[id]="";S.error[id]="";render();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RUN AI ANALYSIS  (mirrors original runAnalysis, streaming)
+═══════════════════════════════════════════════════════════ */
+async function runAnalysis(id){
+  if(!computeStats(id)) return;
+  S.loading[id]=true;S.aiText[id]="";S.error[id]="";render();
+  try{
+    const col=METHODS.find(m=>m.id===id).color;
+    await callAI(buildPrompt(id),text=>{
+      S.aiText[id]=text;
+      const el=document.getElementById("ai-panel");
+      if(el) el.innerHTML=`<div class="ai-out">${esc(text)}<span class="blink" style="color:${col}">▋</span></div>`;
+    });
+  }catch(err){S.error[id]="AI analysis failed: "+err.message;}
+  finally{S.loading[id]=false;render();}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TERRAIN CONTOUR MAP  (Surfer-style IDW)
+═══════════════════════════════════════════════════════════ */
+function renderTerrain(){
+  const col=C.blue;
+  document.getElementById("body").innerHTML=`
+  <div class="mhdr">
+    <div>
+      <div class="mhdr-title" style="color:${col}">🗺️ Geophysical Terrain Contour Map</div>
+      <div class="mhdr-sub">Surfer-style IDW interpolation — enter station lon/lat and field values, then Generate Map</div>
+    </div>
+    <div class="acts">
+      <button class="btn" onclick="addRow()">+ Add Station</button>
+      <button class="btn btn-pri" style="border-color:${col};background:${col};color:#070d0f" onclick="genMap()">▶ Generate Map</button>
+      <button class="btn btn-mut" onclick="loadDemo()">Load Demo</button>
+    </div>
+  </div>
+
+  <!-- COORDINATE INPUT -->
+  <div class="panel">
+    <div class="sec" style="color:${col}">Station Coordinate &amp; Value Input</div>
+    <div class="coord-hdr-row">
+      <div class="chdr">Longitude (°)</div>
+      <div class="chdr">Latitude (°)</div>
+      <div class="chdr">Field Value</div>
+      <div class="chdr">Unit / Type</div>
+      <div class="chdr">Station Label</div>
+      <div></div>
+    </div>
+    <div id="crow"></div>
+    <div style="font-size:10px;color:var(--mut);margin-top:8px">
+      Tip: paste data from your spreadsheet — any field value works (Ω·m, nT, mGal, ms, m/s…)
+    </div>
+  </div>
+
+  <!-- MAP + STATS side by side -->
+  <div class="g2">
+    <div class="panel">
+      <div class="sec" style="color:${col}">Contour Map — IDW Interpolated (power = 2)</div>
+      <canvas id="terrain-canvas" width="700" height="480" style="width:100%;border-radius:4px;background:var(--bg)"></canvas>
+      <div id="t-legend" style="margin-top:10px"></div>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:16px">
+      <div>
+        <div class="sec" style="color:${col}">Map Statistics</div>
+        <div id="t-stats"><div class="ibox" style="border-left-color:var(--mut)">Generate map to view statistics.</div></div>
+      </div>
+      <div>
+        <div class="sec" style="color:${col}">Contour Map — Reading Guide</div>
+        <div style="font-size:11px;line-height:1.9;color:var(--mut)">
+          <b style="color:var(--txt)">Warm colours (red/yellow)</b> → high field values<br>
+          <b style="color:var(--txt)">Cool colours (blue/cyan)</b> → low field values<br>
+          <b style="color:var(--txt)">Contour lines (white dashed)</b> → iso-value lines<br>
+          <b style="color:var(--txt)">White dots</b> → actual measurement station locations<br>
+          <b style="color:var(--txt)">Teal numbers</b> → measured value at each station<br>
+          <b style="color:var(--txt)">IDW</b> (Inverse Distance Weighting) weights nearby stations more strongly — same algorithm used by Surfer software
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  /* populate rows */
+  S.terrainPts.forEach(p=>addRowWith(p.lon,p.lat,p.val,"Ω·m",p.lbl));
+  setTimeout(genMap,100);
+}
+
+function addRow(){
+  const n=document.querySelectorAll(".crow").length+1;
+  addRowWith("","","","Ω·m","Station "+n);
+}
+
+function addRowWith(lon,lat,val,unit,lbl){
+  const wrap=document.getElementById("crow");if(!wrap) return;
+  const div=document.createElement("div");
+  div.className="coord-row crow";
+  div.innerHTML=`
+    <input type="number" step="0.0001" placeholder="e.g. 3.3792" value="${lon}" class="li"/>
+    <input type="number" step="0.0001" placeholder="e.g. 6.5244" value="${lat}" class="la"/>
+    <input type="number" step="any"    placeholder="Value"         value="${val}" class="lv"/>
+    <input type="text"                 placeholder="Ω·m"           value="${unit}" class="lu"/>
+    <input type="text"                 placeholder="Label"         value="${lbl}" class="ll"/>
+    <button class="del-btn" onclick="this.closest('.crow').remove()">✕</button>`;
+  wrap.appendChild(div);
+}
+
+function loadDemo(){
+  const w=document.getElementById("crow");if(!w) return;
+  w.innerHTML="";
+  S.terrainPts.forEach(p=>addRowWith(p.lon,p.lat,p.val,"Ω·m",p.lbl));
+  setTimeout(genMap,100);
+}
+
+function genMap(){
+  const lons=[...document.querySelectorAll(".li")].map(e=>parseFloat(e.value)).filter(v=>!isNaN(v));
+  const lats=[...document.querySelectorAll(".la")].map(e=>parseFloat(e.value)).filter(v=>!isNaN(v));
+  const vals=[...document.querySelectorAll(".lv")].map(e=>parseFloat(e.value)).filter(v=>!isNaN(v));
+  const lbls=[...document.querySelectorAll(".ll")].map(e=>e.value);
+  const units=[...document.querySelectorAll(".lu")].map(e=>e.value);
+  const n=Math.min(lons.length,lats.length,vals.length);
+  if(n<3){alert("Please enter at least 3 complete station rows (lon + lat + value).");return;}
+
+  const pts=Array.from({length:n},(_,i)=>({lon:lons[i],lat:lats[i],val:vals[i],lbl:lbls[i]||"S"+(i+1),unit:units[i]||""}));
+  const minLon=Math.min(...pts.map(p=>p.lon)),maxLon=Math.max(...pts.map(p=>p.lon));
+  const minLat=Math.min(...pts.map(p=>p.lat)),maxLat=Math.max(...pts.map(p=>p.lat));
+  const minV=Math.min(...pts.map(p=>p.val)),maxV=Math.max(...pts.map(p=>p.val));
+  const fUnit=pts[0]?.unit||"";
+
+  const cvs=document.getElementById("terrain-canvas");if(!cvs) return;
+  const ctx=cvs.getContext("2d");
+  const W=cvs.width,H=cvs.height,PAD=66;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
+
+  /* coordinate → pixel */
+  const toX=lon=>PAD+(lon-minLon)/(maxLon-minLon||1e-6)*(W-2*PAD);
+  const toY=lat=>H-PAD-(lat-minLat)/(maxLat-minLat||1e-6)*(H-2*PAD);
+
+  /* Surfer-style rainbow colour ramp */
+  function valColor(v,a=1){
+    const t=Math.max(0,Math.min(1,(v-minV)/(maxV-minV||1)));
+    const stops=[[0,40,180],[0,100,255],[0,210,210],[0,200,80],[255,220,0],[255,80,0],[200,0,0]];
+    const si=t*(stops.length-1);
+    const lo=stops[Math.floor(si)],hi=stops[Math.min(Math.ceil(si),stops.length-1)],f=si%1;
+    return `rgba(${(lo[0]+(hi[0]-lo[0])*f)|0},${(lo[1]+(hi[1]-lo[1])*f)|0},${(lo[2]+(hi[2]-lo[2])*f)|0},${a})`;
+  }
+
+  /* IDW grid (power = 2, geographically correct distances) */
+  const CELL=10;
+  const gW=Math.ceil((W-2*PAD)/CELL)+1,gH=Math.ceil((H-2*PAD)/CELL)+1;
+  const grid=[];
+  for(let gy=0;gy<gH;gy++){
+    grid[gy]=[];
+    for(let gx=0;gx<gW;gx++){
+      const lon=minLon+gx/(gW-1||1)*(maxLon-minLon);
+      const lat=minLat+(gH-1-gy)/(gH-1||1)*(maxLat-minLat);
+      let wS=0,vS=0;
+      pts.forEach(p=>{
+        const dx=(p.lon-lon)*Math.cos(lat*Math.PI/180)*111320;
+        const dy=(p.lat-lat)*111320;
+        const d2=dx*dx+dy*dy+1e-9;
+        const w=1/d2;wS+=w;vS+=w*p.val;
+      });
+      grid[gy][gx]=vS/wS;
+    }
+  }
+
+  /* draw filled colour cells */
+  for(let gy=0;gy<gH-1;gy++){
+    for(let gx=0;gx<gW-1;gx++){
+      const v=(grid[gy][gx]+grid[gy+1][gx]+grid[gy][gx+1]+grid[gy+1][gx+1])/4;
+      ctx.fillStyle=valColor(v,0.90);
+      ctx.fillRect(PAD+gx*CELL,PAD+gy*CELL,CELL+1,CELL+1);
+    }
+  }
+
+  /* contour iso-lines (7 levels) */
+  const nL=7;
+  for(let ci=1;ci<nL;ci++){
+    const cv=minV+ci/nL*(maxV-minV);
+    ctx.strokeStyle="rgba(255,255,255,0.30)";ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    for(let gy=0;gy<gH-1;gy++){
+      for(let gx=0;gx<gW-1;gx++){
+        const px=PAD+gx*CELL,py=PAD+gy*CELL;
+        const v00=grid[gy][gx],v10=grid[gy][gx+1],v01=grid[gy+1][gx];
+        if((v00>=cv)!==(v10>=cv)){const t=(cv-v00)/(v10-v00||1e-9);ctx.beginPath();ctx.moveTo(px+t*CELL,py);ctx.lineTo(px+t*CELL,py+CELL);ctx.stroke();}
+        if((v00>=cv)!==(v01>=cv)){const t=(cv-v00)/(v01-v00||1e-9);ctx.beginPath();ctx.moveTo(px,py+t*CELL);ctx.lineTo(px+CELL,py+t*CELL);ctx.stroke();}
+      }
+    }
+    /* contour value label */
+    ctx.setLineDash([]);ctx.fillStyle="rgba(255,255,255,0.50)";ctx.font="8px 'IBM Plex Mono',monospace";
+    const ly=PAD+((ci/nL)*(H-2*PAD));
+    ctx.fillText(cv.toFixed(1),PAD+3,ly-2);
+  }
+  ctx.setLineDash([]);
+
+  /* border */
+  ctx.strokeStyle="rgba(0,229,176,0.45)";ctx.lineWidth=1.5;
+  ctx.strokeRect(PAD,PAD,W-2*PAD,H-2*PAD);
+
+  /* grid lines + axis tick labels */
+  ctx.font="9px 'IBM Plex Mono',monospace";
+  for(let i=0;i<=5;i++){
+    const lon=minLon+i/5*(maxLon-minLon);
+    const x=PAD+i/5*(W-2*PAD);
+    ctx.strokeStyle="rgba(255,255,255,0.04)";ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,PAD);ctx.lineTo(x,H-PAD);ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.fillText(lon.toFixed(4)+"°",x-20,H-PAD+14);
+  }
+  for(let i=0;i<=5;i++){
+    const lat=minLat+i/5*(maxLat-minLat);
+    const y=H-PAD-i/5*(H-2*PAD);
+    ctx.strokeStyle="rgba(255,255,255,0.04)";ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.fillText(lat.toFixed(4)+"°",2,y+4);
+  }
+
+  /* axis titles */
+  ctx.fillStyle=C.muted;ctx.font="10px 'IBM Plex Mono',monospace";
+  ctx.fillText("Longitude →",W/2-38,H-3);
+  ctx.save();ctx.translate(12,H/2+28);ctx.rotate(-Math.PI/2);ctx.fillText("← Latitude",0,0);ctx.restore();
+
+  /* map title */
+  ctx.fillStyle="rgba(0,229,176,0.65)";ctx.font="bold 11px 'IBM Plex Mono',monospace";
+  ctx.fillText("GEOPHYSICAL CONTOUR MAP  —  IDW INTERPOLATION",PAD+4,PAD-10);
+
+  /* station dots + labels */
+  pts.forEach(p=>{
+    const px=toX(p.lon),py=toY(p.lat);
+    ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(px,py,5.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=C.bg;ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#fff";ctx.font="bold 9px 'IBM Plex Mono',monospace";ctx.fillText(p.lbl,px+8,py+4);
+    ctx.fillStyle=C.accent;ctx.font="8px 'IBM Plex Mono',monospace";
+    ctx.fillText(p.val.toFixed(0)+(p.unit?" "+p.unit:""),px+8,py+14);
+  });
+
+  /* ── stats ── */
+  const mean=pts.reduce((a,b)=>a+b.val,0)/pts.length;
+  const std=Math.sqrt(pts.reduce((a,b)=>a+(b.val-mean)**2,0)/pts.length);
+  const med=[...pts.map(p=>p.val)].sort((a,b)=>a-b)[Math.floor(pts.length/2)];
+  document.getElementById("t-stats").innerHTML=`
+    <div class="g4" style="gap:8px;margin-bottom:8px">
+      <div class="metric"><div class="m-lbl">Stations</div><div class="m-val" style="color:var(--blu);font-size:18px">${pts.length}</div></div>
+      <div class="metric"><div class="m-lbl">Min Value</div><div class="m-val" style="color:var(--grn);font-size:18px">${minV.toFixed(1)}<span class="m-unit">${fUnit}</span></div></div>
+      <div class="metric"><div class="m-lbl">Max Value</div><div class="m-val" style="color:var(--red);font-size:18px">${maxV.toFixed(1)}<span class="m-unit">${fUnit}</span></div></div>
+      <div class="metric"><div class="m-lbl">Mean</div><div class="m-val" style="color:var(--amb);font-size:18px">${mean.toFixed(1)}</div></div>
+    </div>
+    <div class="g4" style="gap:8px">
+      <div class="metric"><div class="m-lbl">Median</div><div class="m-val" style="color:var(--acc);font-size:16px">${med.toFixed(1)}</div></div>
+      <div class="metric"><div class="m-lbl">Std Dev</div><div class="m-val" style="color:var(--pur);font-size:16px">${std.toFixed(1)}</div></div>
+      <div class="metric"><div class="m-lbl">Range</div><div class="m-val" style="color:var(--amb);font-size:16px">${(maxV-minV).toFixed(1)}</div></div>
+      <div class="metric"><div class="m-lbl">Contour Int.</div><div class="m-val" style="color:var(--blu);font-size:16px">${((maxV-minV)/nL).toFixed(1)}</div></div>
+    </div>
+    <div class="metric" style="margin-top:8px"><div class="m-lbl">Longitude Range</div><div style="font-size:11px;color:var(--txt);font-family:monospace;margin-top:4px">${minLon.toFixed(5)}° — ${maxLon.toFixed(5)}°</div></div>
+    <div class="metric" style="margin-top:8px"><div class="m-lbl">Latitude Range</div><div style="font-size:11px;color:var(--txt);font-family:monospace;margin-top:4px">${minLat.toFixed(5)}° — ${maxLat.toFixed(5)}°</div></div>`;
+
+  /* colour scale legend */
+  const stops=["rgba(0,40,180,1)","rgba(0,100,255,1)","rgba(0,210,210,1)","rgba(0,200,80,1)","rgba(255,220,0,1)","rgba(255,80,0,1)","rgba(200,0,0,1)"];
+  const nL2=nL;
+  document.getElementById("t-legend").innerHTML=`
+    <div class="clr-bar">${stops.map(s=>`<div style="flex:1;background:${s}"></div>`).join("")}</div>
+    <div class="clr-lbls">
+      ${Array.from({length:6},(_,i)=>`<span>${(minV+(i/5)*(maxV-minV)).toFixed(0)}</span>`).join("")}
+      <span>${fUnit}</span>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+render();
+</script>
+</body>
+</html>
