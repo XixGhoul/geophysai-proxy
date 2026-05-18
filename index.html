@@ -19,7 +19,7 @@
 body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier New',monospace;min-height:100vh;display:flex;flex-direction:column;font-size:13px}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
 
-/* ── header (exact original style) ── */
+/* ── header ── */
 #hdr{border-bottom:1px solid var(--bdr);background:var(--surf);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .logo-wrap{display:flex;align-items:center;gap:14px}
 .logo-icon{width:36px;height:36px;border-radius:6px;background:linear-gradient(135deg,rgba(0,229,176,.18),rgba(0,122,94,.38));border:1px solid var(--accD);display:flex;align-items:center;justify-content:center;font-size:18px}
@@ -43,7 +43,7 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
 .mhdr-sub{font-size:11px;color:var(--mut);margin-top:3px;letter-spacing:1px}
 .acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 
-/* ── buttons (exact original feel) ── */
+/* ── buttons ── */
 .btn{border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all .15s;text-transform:uppercase;padding:6px 14px;border:1px solid var(--acc);background:transparent;color:var(--acc)}
 .btn:hover{background:rgba(0,229,176,.08)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -63,7 +63,7 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
 @media(max-width:960px){.g2,.g3,.g4,.g5{grid-template-columns:1fr 1fr}.g12{grid-template-columns:1fr}}
 @media(max-width:600px){.g2,.g3,.g4,.g5,.g12{grid-template-columns:1fr}}
 
-/* ── metric card (original Metric component) ── */
+/* ── metric card ── */
 .metric{background:var(--surf);border:1px solid var(--bdr);border-radius:4px;padding:10px 14px;min-width:90px}
 .m-lbl{font-size:10px;color:var(--mut);letter-spacing:2px;font-family:monospace;margin-bottom:4px;text-transform:uppercase}
 .m-val{font-size:20px;font-family:monospace;font-weight:700}
@@ -75,7 +75,7 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
 /* ── chart box ── */
 .chart-box{position:relative;height:260px;width:100%}
 
-/* ── AI panel (original style) ── */
+/* ── AI panel ── */
 .ai-out{font-size:12px;line-height:1.75;color:var(--txt);white-space:pre-wrap;max-height:320px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent}
 .ai-idle{height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--mut);font-size:12px;text-align:center}
 .blink{animation:blink 1s infinite}
@@ -83,14 +83,14 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{animation:spin 1s linear infinite;display:inline-block}
 
-/* ── data preview table (original) ── */
+/* ── data preview table ── */
 .dt-wrap{max-height:180px;overflow-y:auto;scrollbar-width:thin}
 .dt{width:100%;border-collapse:collapse;font-size:11px}
 .dt th{text-align:left;padding:4px 10px;border-bottom:1px solid var(--bdr);letter-spacing:2px;font-size:10px}
 .dt td{padding:4px 10px;color:var(--txt);border-bottom:1px solid var(--grid)}
 .dt tr:nth-child(even) td{background:rgba(255,255,255,.02)}
 
-/* ── layer stratigraphy table (NEW) ── */
+/* ── layer stratigraphy table ── */
 .lt{width:100%;border-collapse:collapse;font-size:11px;font-family:monospace}
 .lt th{background:var(--surf);padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bdr);white-space:nowrap}
 .lt td{padding:7px 10px;border-bottom:1px solid var(--grid);white-space:nowrap}
@@ -125,35 +125,23 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
 /* ── footer ── */
 #footer{border-top:1px solid var(--bdr);background:var(--surf);padding:10px 28px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--mut);letter-spacing:1px;flex-shrink:0;flex-wrap:wrap;gap:6px}
 
-/* ── API key overlay ── */
-#key-overlay{position:fixed;inset:0;background:rgba(7,13,15,0.96);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)}
-.key-card{background:var(--panel);border:1px solid rgba(0,229,176,0.35);border-radius:10px;padding:36px;max-width:460px;width:calc(100% - 40px)}
-.key-card h2{font-size:20px;font-weight:700;color:var(--acc);letter-spacing:3px;margin-bottom:8px}
-.key-card p{font-size:12px;color:var(--mut);line-height:1.7;margin-bottom:20px}
-.key-input{width:100%;background:var(--surf);border:1px solid var(--bdr);border-radius:4px;padding:11px 14px;color:var(--txt);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;margin-bottom:12px;letter-spacing:1px}
-.key-input:focus{border-color:var(--acc)}
-.key-input::placeholder{color:var(--mut)}
-.key-note{font-size:10px;color:var(--mut);margin-top:10px;line-height:1.7}
-.key-note a{color:var(--blu)}
+/* ── server status banner (replaces key overlay) ── */
+#server-banner{display:none;position:fixed;inset:0;background:rgba(7,13,15,0.96);align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)}
+.server-card{background:var(--panel);border:1px solid rgba(255,77,77,0.35);border-radius:10px;padding:36px;max-width:460px;width:calc(100% - 40px);text-align:center}
+.server-card h2{font-size:18px;font-weight:700;color:var(--red);letter-spacing:3px;margin-bottom:12px}
+.server-card p{font-size:12px;color:var(--mut);line-height:1.7}
 .api-dot{width:7px;height:7px;border-radius:50%;background:var(--red);transition:background .3s;flex-shrink:0}
 .api-dot.ready{background:var(--acc)}
 </style>
 </head>
 <body>
 
-<!-- API KEY OVERLAY -->
-<div id="key-overlay">
-  <div class="key-card">
-    <h2>GEOPHYS<span style="color:var(--txt)">AI</span></h2>
-    <p>Enter your Anthropic API key to enable AI-powered geological interpretation. Your key is stored only in this browser session and is never sent anywhere except Anthropic's servers.</p>
-    <input type="password" class="key-input" id="api-key-input" placeholder="sk-ant-api03-…" />
-    <button class="btn btn-pri" style="width:100%;justify-content:center;padding:11px;font-size:12px;background:var(--acc);color:#070d0f" onclick="saveKey()">
-      Continue to GeoPhysAI →
-    </button>
-    <div class="key-note">
-      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
-      Key is stored in memory only — cleared when you close this tab.
-    </div>
+<!-- SERVER ERROR BANNER (shown only if proxy fails, no more key entry screen) -->
+<div id="server-banner" style="display:none;position:fixed;inset:0;background:rgba(7,13,15,0.96);align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)">
+  <div class="server-card">
+    <h2>⚠ SERVER ERROR</h2>
+    <p id="server-banner-msg">Could not reach the AI backend. Please contact the administrator.</p>
+    <button class="btn btn-pri" style="margin-top:20px;padding:10px 24px" onclick="document.getElementById('server-banner').style.display='none'">Dismiss</button>
   </div>
 </div>
 
@@ -168,13 +156,12 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
   </div>
   <div style="display:flex;gap:8px;align-items:center">
     <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--mut);font-family:monospace">
-      <div class="api-dot" id="api-dot"></div>
-      <span id="api-status-text">No key</span>
+      <div class="api-dot ready" id="api-dot"></div>
+      <span id="api-status-text">AI Ready</span>
     </div>
     <span class="badge" style="color:var(--acc)">v3.0</span>
     <span class="badge" style="color:var(--amb)">AI POWERED</span>
     <span class="badge" style="color:var(--blu)">10 METHODS</span>
-    <button class="btn btn-mut" style="padding:4px 10px;font-size:10px" onclick="showKeyOverlay()">🔑 API Key</button>
   </div>
 </div>
 
@@ -194,31 +181,7 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
 "use strict";
 
 /* ═══════════════════════════════════════════════════════════
-   API KEY
-═══════════════════════════════════════════════════════════ */
-let API_KEY = "";
-
-function saveKey(){
-  const val=document.getElementById("api-key-input").value.trim();
-  if(!val.startsWith("sk-")){alert("Please enter a valid Anthropic API key (starts with sk-)");return;}
-  API_KEY=val;
-  document.getElementById("key-overlay").style.display="none";
-  document.getElementById("api-dot").classList.add("ready");
-  document.getElementById("api-status-text").textContent="Key active";
-}
-
-function showKeyOverlay(){
-  document.getElementById("key-overlay").style.display="flex";
-  document.getElementById("api-key-input").value=API_KEY;
-}
-
-document.addEventListener("DOMContentLoaded",()=>{
-  const inp=document.getElementById("api-key-input");
-  if(inp) inp.addEventListener("keydown",e=>{if(e.key==="Enter") saveKey();});
-});
-
-/* ═══════════════════════════════════════════════════════════
-   PALETTE  (exact original C object)
+   PALETTE
 ═══════════════════════════════════════════════════════════ */
 const C={bg:"#070d0f",surface:"#0d1a1e",panel:"#111f24",border:"#1a3540",
   accent:"#00e5b0",accentDim:"#007a5e",amber:"#f5a623",red:"#ff4d4d",
@@ -226,7 +189,7 @@ const C={bg:"#070d0f",surface:"#0d1a1e",panel:"#111f24",border:"#1a3540",
   purple:"#c084fc",green:"#00c853",orange:"#fb923c",pink:"#f472b6"};
 
 /* ═══════════════════════════════════════════════════════════
-   METHODS  (original 4 + 6 new + terrain tab)
+   METHODS
 ═══════════════════════════════════════════════════════════ */
 const METHODS=[
   {id:"ves",    label:"VES",              full:"Vertical Electrical Sounding",      icon:"⚡",color:C.accent},
@@ -243,7 +206,7 @@ const METHODS=[
 ];
 
 /* ═══════════════════════════════════════════════════════════
-   SAMPLE DATA  (original 4 + 6 new)
+   SAMPLE DATA
 ═══════════════════════════════════════════════════════════ */
 const SAMPLE={
   ves:[
@@ -264,8 +227,7 @@ const SAMPLE={
 };
 
 /* ═══════════════════════════════════════════════════════════
-   VES LAYER MODEL  (NEW — core of the enhancement)
-   Cumulative depths are computed from thick values.
+   VES LAYER MODEL
 ═══════════════════════════════════════════════════════════ */
 const VES_LAYERS=[
   {n:1,name:"Topsoil / Laterite",       res:85,   thick:3,   dens:1.65,cls:"amb",lbl:"Dry Overburden",      target:""},
@@ -274,7 +236,7 @@ const VES_LAYERS=[
   {n:4,name:"Fractured Basement",        res:220,  thick:12,  dens:2.10,cls:"grn",lbl:"★ Primary Aquifer",   target:"AQUIFER"},
   {n:5,name:"Fresh Basement Rock",       res:4800, thick:null,dens:2.65,cls:"red",lbl:"Resistive Bedrock",   target:""},
 ];
-const VES_RMS=3.2; // % RMS misfit for the 5-layer model
+const VES_RMS=3.2;
 
 /* ═══════════════════════════════════════════════════════════
    APP STATE
@@ -295,7 +257,7 @@ const S={
 };
 
 /* ═══════════════════════════════════════════════════════════
-   STATS  (mirrors original computeStats)
+   STATS
 ═══════════════════════════════════════════════════════════ */
 function computeStats(id){
   const d=S.data[id]; if(!d||!d.length) return null;
@@ -308,7 +270,7 @@ function computeStats(id){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CSV TEMPLATES  (original)
+   CSV TEMPLATES
 ═══════════════════════════════════════════════════════════ */
 const CSV_TMPL={
   ves:"ab2,rho_a",ert:"x,depth,rho",ip:"spacing,chargeability,resistivity",
@@ -318,7 +280,7 @@ const CSV_TMPL={
 };
 
 /* ═══════════════════════════════════════════════════════════
-   METRIC DEFINITIONS  (original 3 metrics + enhanced extras)
+   METRIC DEFINITIONS
 ═══════════════════════════════════════════════════════════ */
 function metricDefs(id){
   const s=computeStats(id);
@@ -347,7 +309,7 @@ function metricDefs(id){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   METHOD GUIDES  (original text preserved + 6 new)
+   METHOD GUIDES
 ═══════════════════════════════════════════════════════════ */
 const GUIDE={
   ves:`<b style="color:var(--txt)">Rising curve</b> → resistivity increases with depth<br>
@@ -396,11 +358,10 @@ const GUIDE={
 };
 
 /* ═══════════════════════════════════════════════════════════
-   ANOMALY SUMMARY TABLES  (NEW — detailed per-method)
+   ANOMALY SUMMARY TABLES
 ═══════════════════════════════════════════════════════════ */
 function anomalyHTML(id){
   if(id==="ves"){
-    /* Build stratigraphy rows with cumulative depths */
     let cum=0;
     const rows=VES_LAYERS.map(l=>{
       const top=cum;
@@ -500,25 +461,28 @@ function anomalyHTML(id){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   AI CALL  (exact original streaming pattern)
+   AI CALL — REWIRED TO USE VERCEL PROXY (/api/analyze)
+   No API key needed in the browser. The key lives securely
+   in Vercel environment variables (CLAUDE_API_KEY).
 ═══════════════════════════════════════════════════════════ */
-async function callAI(prompt,onChunk){
-  if(!API_KEY){showKeyOverlay();throw new Error("No API key — please enter your Anthropic key.");}
+async function callAI(prompt, onChunk) {
+  const dot = document.getElementById("api-dot");
+  const statusTxt = document.getElementById("api-status-text");
 
-  /* ── attempt streaming request ── */
+  // Mark as connecting
+  if (dot) dot.classList.remove("ready");
+  if (statusTxt) statusTxt.textContent = "Connecting…";
+
   let res;
-  try{
-    res=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "x-api-key":API_KEY,
-        "anthropic-version":"2023-06-01",
-        "anthropic-dangerous-allow-browser":"true"
-      },
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",max_tokens:1400,stream:true,
-        system:`You are GeoPhysAI — an expert geophysicist specialising in applied geophysics.
+  try {
+    res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1400,
+        stream: true,
+        system: `You are GeoPhysAI — an expert geophysicist specialising in applied geophysics.
 Interpret field survey data with precision and professional terminology.
 Structure your response as:
 1. DATA QUALITY ASSESSMENT — comment on data spread, RMS, coverage
@@ -529,47 +493,54 @@ Structure your response as:
 4. TARGET ASSESSMENT — exact depth to aquifer or ore body, confidence level, coordinates if available
 5. RECOMMENDATIONS — borehole depth, screen interval, follow-up surveys
 Be concise, technical, actionable. Use Ω·m, nT, mGal, ms correctly.`,
-        messages:[{role:"user",content:prompt}],
+        messages: [{ role: "user", content: prompt }],
       }),
     });
-  }catch(fetchErr){
-    /* Network / CORS failure — give a clear actionable message */
-    throw new Error(
-      "Network error — cannot reach Anthropic API.\n\n"+
-      "Most common fix: open this file via a local server, not by double-clicking.\n"+
-      "In your terminal, run:  python -m http.server 8000\n"+
-      "Then open:  http://localhost:8000/GeoPhysAI_v3_fixed.html\n\n"+
-      "(Original error: "+fetchErr.message+")"
-    );
+  } catch (fetchErr) {
+    if (dot) dot.style.background = "var(--red)";
+    if (statusTxt) statusTxt.textContent = "Network error";
+    throw new Error("Network error reaching proxy: " + fetchErr.message);
   }
 
-  /* ── check HTTP status ── */
-  if(!res.ok){
-    let errMsg=`HTTP ${res.status}`;
-    try{const j=await res.json();errMsg=j.error?.message||errMsg;}catch{}
-    if(res.status===401) errMsg="Invalid API key — please click 🔑 API Key and re-enter your key.";
-    if(res.status===429) errMsg="Rate limit / quota exceeded — check your Anthropic billing at console.anthropic.com.";
+  if (!res.ok) {
+    let errMsg = `Server error (HTTP ${res.status})`;
+    try { const j = await res.json(); errMsg = j.error || errMsg; } catch {}
+    if (res.status === 500 && errMsg.includes("API key not configured")) {
+      errMsg = "CLAUDE_API_KEY not set in Vercel environment variables. Add it in Vercel → Settings → Environment Variables.";
+    }
+    if (dot) dot.style.background = "var(--red)";
+    if (statusTxt) statusTxt.textContent = "Server error";
     throw new Error(errMsg);
   }
 
-  /* ── stream response ── */
-  const reader=res.body.getReader(),dec=new TextDecoder();
-  let full="";
-  while(true){
-    const{done,value}=await reader.read();if(done)break;
-    for(const line of dec.decode(value).split("\n").filter(l=>l.startsWith("data:"))){
-      try{
-        const j=JSON.parse(line.slice(5));
-        if(j.type==="content_block_delta"&&j.delta?.text){full+=j.delta.text;onChunk(full);}
-      }catch{}
+  // Mark as live / streaming
+  if (dot) { dot.classList.add("ready"); dot.style.background = ""; }
+  if (statusTxt) statusTxt.textContent = "Streaming…";
+
+  // Stream the response
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let full = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    for (const line of dec.decode(value).split("\n").filter(l => l.startsWith("data:"))) {
+      try {
+        const j = JSON.parse(line.slice(5));
+        if (j.type === "content_block_delta" && j.delta?.text) {
+          full += j.delta.text;
+          onChunk(full);
+        }
+      } catch {}
     }
   }
+
+  if (statusTxt) statusTxt.textContent = "AI Ready";
+  if (dot) dot.classList.add("ready");
   return full;
 }
 
-
 /* ═══════════════════════════════════════════════════════════
-   BUILD PROMPT  (enhanced over original)
+   BUILD PROMPT
 ═══════════════════════════════════════════════════════════ */
 function buildPrompt(id){
   const d=S.data[id],s=computeStats(id);
@@ -625,7 +596,6 @@ function render(){
   const d=S.data[id]||[];
   const metrics=metricDefs(id);
 
-  /* metric cards HTML */
   const mHtml=metrics.map(m=>`
     <div class="metric">
       <div class="m-lbl">${m.l}</div>
@@ -636,7 +606,6 @@ function render(){
       <div class="m-val" style="color:${C.muted}">${stats?.points??'—'}<span class="m-unit">pts</span></div>
     </div>`;
 
-  /* AI panel HTML */
   let aiHtml="";
   if(S.error[id]) aiHtml+=`<div style="color:var(--red);font-size:12px;margin-bottom:10px">${esc(S.error[id])}</div>`;
   if(S.aiText[id]){
@@ -651,7 +620,6 @@ function render(){
     </div>`;
   }
 
-  /* data table HTML (original style) */
   let dtHtml=`<div style="color:var(--mut);font-size:12px">No data loaded</div>`;
   if(d.length){
     const keys=Object.keys(d[0]);
@@ -662,16 +630,13 @@ function render(){
       </tbody></table></div>`;
   }
 
-  /* VES extra panels (NEW) */
   let vesExtra="";
   if(id==="ves"){
     vesExtra=`
-    <!-- VES LAYER TABLE -->
     <div class="panel">
       <div class="sec" style="color:${col}">Detailed Layer Stratigraphy — 1D Earth Model (${VES_LAYERS.length} Layers · RMS = ${VES_RMS}%)</div>
       ${anomalyHTML("ves")}
     </div>
-    <!-- VES AQUIFER PANEL -->
     <div class="g2">
       <div class="panel">
         <div class="sec" style="color:${col}">Aquifer / Ore Body — Target Analysis</div>
@@ -702,9 +667,7 @@ function render(){
     </div>`;
   }
 
-  /* full page HTML */
   document.getElementById("body").innerHTML=`
-  <!-- METHOD HEADER (exact original layout) -->
   <div class="mhdr">
     <div>
       <div class="mhdr-title" style="color:${col}">${method.icon} ${method.full}</div>
@@ -723,17 +686,14 @@ function render(){
     </div>
   </div>
 
-  <!-- CSV HINT (original style) -->
   <div class="csv-hint" style="background:${col}08;border:1px solid ${col}25">
     <span style="color:${col}">CSV FORMAT</span>
     <code style="color:var(--txt)">${CSV_TMPL[id]||""}</code>
     <span>— ${d.length>0?"✓ Data loaded":"No data — using sample"}</span>
   </div>
 
-  <!-- METRICS (original layout, now 5 cards) -->
   <div class="g5">${mHtml}</div>
 
-  <!-- CHART + AI (original 2-column layout) -->
   <div class="g2">
     <div class="panel">
       <div class="sec" style="color:${col}">${method.label} · ${chartTitle(id)}</div>
@@ -747,7 +707,6 @@ function render(){
 
   ${vesExtra}
 
-  <!-- DATA TABLE + GUIDE (original second row) -->
   <div class="g12">
     <div class="panel">
       <div class="sec" style="color:${col}">Raw Data Preview</div>
@@ -759,7 +718,6 @@ function render(){
     </div>
   </div>
 
-  <!-- ANOMALY SUMMARY TABLE (NEW for non-VES methods) -->
   ${id!=="ves"?`<div class="panel">
     <div class="sec" style="color:${col}">Anomaly &amp; Target Summary</div>
     ${anomalyHTML(id)}
@@ -769,7 +727,7 @@ function render(){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHART.JS  (mirrors original Recharts charts)
+   CHART.JS
 ═══════════════════════════════════════════════════════════ */
 function drawChart(id){
   const cvs=document.getElementById("mc");if(!cvs) return;
@@ -830,7 +788,6 @@ function drawChart(id){
       plugins:{legend:{labels:{color:C.muted,font:{size:11}}},tooltip:tt}}},
 
     magnetic:(()=>{
-      /* detrend: subtract mean so anomaly wiggle is visible, not buried in regional field */
       const tmfVals=d.map(r=>r.tmf).filter(v=>!isNaN(v));
       const rtpVals=d.map(r=>r.rtp).filter(v=>!isNaN(v));
       const tmfMean=tmfVals.reduce((a,b)=>a+b,0)/(tmfVals.length||1);
@@ -873,7 +830,7 @@ function drawChart(id){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   FILE UPLOAD  (mirrors original handleFile)
+   FILE UPLOAD
 ═══════════════════════════════════════════════════════════ */
 function handleFile(e,id){
   const file=e.target.files[0];if(!file) return;
@@ -883,8 +840,6 @@ function handleFile(e,id){
     try{
       const lines=ev.target.result.split("\n").filter(l=>l.trim());
       const rawHeaders=lines[0].split(",").map(h=>h.trim().toLowerCase());
-
-      /* ── expected column names per method ── */
       const expectedKeys={
         ves:["ab2","rho_a"], ert:["x","depth","rho"],
         ip:["spacing","chargeability","resistivity"], sp:["station","sp"],
@@ -893,12 +848,8 @@ function handleFile(e,id){
         sref:["distance","traveltime"], srefl:["cmp","twt"],
       };
       const wantedKeys=expectedKeys[id]||[];
-
-      /* check if headers match the expected schema */
       const headersMatch=wantedKeys.length>0&&wantedKeys.every(k=>rawHeaders.includes(k));
-
       if(headersMatch){
-        /* ── named-column parse (original v3 behaviour) ── */
         const rows=lines.slice(1).map(l=>{
           const vals=l.split(",");const obj={};
           rawHeaders.forEach((h,i)=>{const n=parseFloat(vals[i]);obj[h]=isNaN(n)?vals[i]?.trim()||"":n;});
@@ -907,12 +858,9 @@ function handleFile(e,id){
         if(rows.length===0){S.error[id]="CSV parsed but no numeric rows found.";render();return;}
         S.data[id]=rows;S.aiText[id]="";render();
       }else{
-        /* ── two-column fallback (v2 behaviour): col0=x, col1=y ── */
-        const fallbackKey=wantedKeys;
         const k0=wantedKeys[0]||rawHeaders[0]||"x";
         const k1=wantedKeys[1]||rawHeaders[1]||"y";
         const rows=[];
-        /* try to detect if row 0 is a header by checking if first cell is non-numeric */
         const startRow=isNaN(parseFloat(lines[0].split(",")[0]))?1:0;
         for(let i=startRow;i<lines.length;i++){
           const parts=lines[i].split(",");
@@ -920,10 +868,7 @@ function handleFile(e,id){
           if(!isNaN(a)&&!isNaN(b)){const obj={};obj[k0]=a;obj[k1]=b;rows.push(obj);}
         }
         if(rows.length===0){S.error[id]=`Could not parse CSV. Use headers: ${wantedKeys.join(", ")} — or two plain numeric columns.`;render();return;}
-        S.data[id]=rows;S.aiText[id]="";
-        S.error[id]=``;/* clear any previous error */
-        render();
-        /* friendly notice */
+        S.data[id]=rows;S.aiText[id]="";S.error[id]="";render();
         const panel=document.getElementById("ai-panel");
         if(panel) panel.innerHTML=`<div style="color:var(--amb);font-size:11px;line-height:1.7">
           ✅ <strong>${rows.length} rows</strong> loaded (two-column fallback — columns mapped as <code>${k0}</code> / <code>${k1}</code>).<br>
@@ -937,7 +882,7 @@ function handleFile(e,id){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   RESET  (mirrors original resetData)
+   RESET
 ═══════════════════════════════════════════════════════════ */
 function resetData(id){
   S.data[id]=SAMPLE[id]?[...SAMPLE[id]]:[];
@@ -945,7 +890,7 @@ function resetData(id){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   RUN AI ANALYSIS  (mirrors original runAnalysis, streaming)
+   RUN AI ANALYSIS
 ═══════════════════════════════════════════════════════════ */
 async function runAnalysis(id){
   if(!computeStats(id)) return;
@@ -962,7 +907,7 @@ async function runAnalysis(id){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TERRAIN CONTOUR MAP  (Surfer-style IDW)
+   TERRAIN CONTOUR MAP
 ═══════════════════════════════════════════════════════════ */
 function renderTerrain(){
   const col=C.blue;
@@ -978,8 +923,6 @@ function renderTerrain(){
       <button class="btn btn-mut" onclick="loadDemo()">Load Demo</button>
     </div>
   </div>
-
-  <!-- COORDINATE INPUT -->
   <div class="panel">
     <div class="sec" style="color:${col}">Station Coordinate &amp; Value Input</div>
     <div class="coord-hdr-row">
@@ -995,8 +938,6 @@ function renderTerrain(){
       Tip: paste data from your spreadsheet — any field value works (Ω·m, nT, mGal, ms, m/s…)
     </div>
   </div>
-
-  <!-- MAP + STATS side by side -->
   <div class="g2">
     <div class="panel">
       <div class="sec" style="color:${col}">Contour Map — IDW Interpolated (power = 2)</div>
@@ -1021,8 +962,6 @@ function renderTerrain(){
       </div>
     </div>
   </div>`;
-
-  /* populate rows */
   S.terrainPts.forEach(p=>addRowWith(p.lon,p.lat,p.val,"Ω·m",p.lbl));
   setTimeout(genMap,100);
 }
@@ -1061,24 +1000,17 @@ function genMap(){
   const units=[...document.querySelectorAll(".lu")].map(e=>e.value);
   const n=Math.min(lons.length,lats.length,vals.length);
   if(n<3){alert("Please enter at least 3 complete station rows (lon + lat + value).");return;}
-
   const pts=Array.from({length:n},(_,i)=>({lon:lons[i],lat:lats[i],val:vals[i],lbl:lbls[i]||"S"+(i+1),unit:units[i]||""}));
   const minLon=Math.min(...pts.map(p=>p.lon)),maxLon=Math.max(...pts.map(p=>p.lon));
   const minLat=Math.min(...pts.map(p=>p.lat)),maxLat=Math.max(...pts.map(p=>p.lat));
   const minV=Math.min(...pts.map(p=>p.val)),maxV=Math.max(...pts.map(p=>p.val));
   const fUnit=pts[0]?.unit||"";
-
   const cvs=document.getElementById("terrain-canvas");if(!cvs) return;
   const ctx=cvs.getContext("2d");
   const W=cvs.width,H=cvs.height,PAD=66;
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
-
-  /* coordinate → pixel */
+  ctx.clearRect(0,0,W,H);ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
   const toX=lon=>PAD+(lon-minLon)/(maxLon-minLon||1e-6)*(W-2*PAD);
   const toY=lat=>H-PAD-(lat-minLat)/(maxLat-minLat||1e-6)*(H-2*PAD);
-
-  /* Surfer-style rainbow colour ramp */
   function valColor(v,a=1){
     const t=Math.max(0,Math.min(1,(v-minV)/(maxV-minV||1)));
     const stops=[[0,40,180],[0,100,255],[0,210,210],[0,200,80],[255,220,0],[255,80,0],[200,0,0]];
@@ -1086,87 +1018,51 @@ function genMap(){
     const lo=stops[Math.floor(si)],hi=stops[Math.min(Math.ceil(si),stops.length-1)],f=si%1;
     return `rgba(${(lo[0]+(hi[0]-lo[0])*f)|0},${(lo[1]+(hi[1]-lo[1])*f)|0},${(lo[2]+(hi[2]-lo[2])*f)|0},${a})`;
   }
-
-  /* IDW grid (power = 2, geographically correct distances) */
   const CELL=10;
   const gW=Math.ceil((W-2*PAD)/CELL)+1,gH=Math.ceil((H-2*PAD)/CELL)+1;
   const grid=[];
-  for(let gy=0;gy<gH;gy++){
-    grid[gy]=[];
-    for(let gx=0;gx<gW;gx++){
-      const lon=minLon+gx/(gW-1||1)*(maxLon-minLon);
-      const lat=minLat+(gH-1-gy)/(gH-1||1)*(maxLat-minLat);
-      let wS=0,vS=0;
-      pts.forEach(p=>{
-        const dx=(p.lon-lon)*Math.cos(lat*Math.PI/180)*111320;
-        const dy=(p.lat-lat)*111320;
-        const d2=dx*dx+dy*dy+1e-9;
-        const w=1/d2;wS+=w;vS+=w*p.val;
-      });
-      grid[gy][gx]=vS/wS;
-    }
+  for(let gy=0;gy<gH;gy++){grid[gy]=[];for(let gx=0;gx<gW;gx++){
+    const lon=minLon+gx/(gW-1||1)*(maxLon-minLon);
+    const lat=minLat+(gH-1-gy)/(gH-1||1)*(maxLat-minLat);
+    let wS=0,vS=0;
+    pts.forEach(p=>{const dx=(p.lon-lon)*Math.cos(lat*Math.PI/180)*111320;const dy=(p.lat-lat)*111320;const d2=dx*dx+dy*dy+1e-9;const w=1/d2;wS+=w;vS+=w*p.val;});
+    grid[gy][gx]=vS/wS;
+  }}
+  for(let gy=0;gy<gH-1;gy++)for(let gx=0;gx<gW-1;gx++){
+    const v=(grid[gy][gx]+grid[gy+1][gx]+grid[gy][gx+1]+grid[gy+1][gx+1])/4;
+    ctx.fillStyle=valColor(v,0.90);ctx.fillRect(PAD+gx*CELL,PAD+gy*CELL,CELL+1,CELL+1);
   }
-
-  /* draw filled colour cells */
-  for(let gy=0;gy<gH-1;gy++){
-    for(let gx=0;gx<gW-1;gx++){
-      const v=(grid[gy][gx]+grid[gy+1][gx]+grid[gy][gx+1]+grid[gy+1][gx+1])/4;
-      ctx.fillStyle=valColor(v,0.90);
-      ctx.fillRect(PAD+gx*CELL,PAD+gy*CELL,CELL+1,CELL+1);
-    }
-  }
-
-  /* contour iso-lines (7 levels) */
   const nL=7;
   for(let ci=1;ci<nL;ci++){
     const cv=minV+ci/nL*(maxV-minV);
     ctx.strokeStyle="rgba(255,255,255,0.30)";ctx.lineWidth=1;ctx.setLineDash([3,3]);
-    for(let gy=0;gy<gH-1;gy++){
-      for(let gx=0;gx<gW-1;gx++){
-        const px=PAD+gx*CELL,py=PAD+gy*CELL;
-        const v00=grid[gy][gx],v10=grid[gy][gx+1],v01=grid[gy+1][gx];
-        if((v00>=cv)!==(v10>=cv)){const t=(cv-v00)/(v10-v00||1e-9);ctx.beginPath();ctx.moveTo(px+t*CELL,py);ctx.lineTo(px+t*CELL,py+CELL);ctx.stroke();}
-        if((v00>=cv)!==(v01>=cv)){const t=(cv-v00)/(v01-v00||1e-9);ctx.beginPath();ctx.moveTo(px,py+t*CELL);ctx.lineTo(px+CELL,py+t*CELL);ctx.stroke();}
-      }
+    for(let gy=0;gy<gH-1;gy++)for(let gx=0;gx<gW-1;gx++){
+      const px=PAD+gx*CELL,py=PAD+gy*CELL;
+      const v00=grid[gy][gx],v10=grid[gy][gx+1],v01=grid[gy+1][gx];
+      if((v00>=cv)!==(v10>=cv)){const t=(cv-v00)/(v10-v00||1e-9);ctx.beginPath();ctx.moveTo(px+t*CELL,py);ctx.lineTo(px+t*CELL,py+CELL);ctx.stroke();}
+      if((v00>=cv)!==(v01>=cv)){const t=(cv-v00)/(v01-v00||1e-9);ctx.beginPath();ctx.moveTo(px,py+t*CELL);ctx.lineTo(px+CELL,py+t*CELL);ctx.stroke();}
     }
-    /* contour value label */
     ctx.setLineDash([]);ctx.fillStyle="rgba(255,255,255,0.50)";ctx.font="8px 'IBM Plex Mono',monospace";
-    const ly=PAD+((ci/nL)*(H-2*PAD));
-    ctx.fillText(cv.toFixed(1),PAD+3,ly-2);
+    const ly=PAD+((ci/nL)*(H-2*PAD));ctx.fillText(cv.toFixed(1),PAD+3,ly-2);
   }
   ctx.setLineDash([]);
-
-  /* border */
-  ctx.strokeStyle="rgba(0,229,176,0.45)";ctx.lineWidth=1.5;
-  ctx.strokeRect(PAD,PAD,W-2*PAD,H-2*PAD);
-
-  /* grid lines + axis tick labels */
+  ctx.strokeStyle="rgba(0,229,176,0.45)";ctx.lineWidth=1.5;ctx.strokeRect(PAD,PAD,W-2*PAD,H-2*PAD);
   ctx.font="9px 'IBM Plex Mono',monospace";
   for(let i=0;i<=5;i++){
-    const lon=minLon+i/5*(maxLon-minLon);
-    const x=PAD+i/5*(W-2*PAD);
-    ctx.strokeStyle="rgba(255,255,255,0.04)";ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(x,PAD);ctx.lineTo(x,H-PAD);ctx.stroke();
+    const lon=minLon+i/5*(maxLon-minLon);const x=PAD+i/5*(W-2*PAD);
+    ctx.strokeStyle="rgba(255,255,255,0.04)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,PAD);ctx.lineTo(x,H-PAD);ctx.stroke();
     ctx.fillStyle=C.muted;ctx.fillText(lon.toFixed(4)+"°",x-20,H-PAD+14);
   }
   for(let i=0;i<=5;i++){
-    const lat=minLat+i/5*(maxLat-minLat);
-    const y=H-PAD-i/5*(H-2*PAD);
-    ctx.strokeStyle="rgba(255,255,255,0.04)";ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();
+    const lat=minLat+i/5*(maxLat-minLat);const y=H-PAD-i/5*(H-2*PAD);
+    ctx.strokeStyle="rgba(255,255,255,0.04)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();
     ctx.fillStyle=C.muted;ctx.fillText(lat.toFixed(4)+"°",2,y+4);
   }
-
-  /* axis titles */
   ctx.fillStyle=C.muted;ctx.font="10px 'IBM Plex Mono',monospace";
   ctx.fillText("Longitude →",W/2-38,H-3);
   ctx.save();ctx.translate(12,H/2+28);ctx.rotate(-Math.PI/2);ctx.fillText("← Latitude",0,0);ctx.restore();
-
-  /* map title */
   ctx.fillStyle="rgba(0,229,176,0.65)";ctx.font="bold 11px 'IBM Plex Mono',monospace";
   ctx.fillText("GEOPHYSICAL CONTOUR MAP  —  IDW INTERPOLATION",PAD+4,PAD-10);
-
-  /* station dots + labels */
   pts.forEach(p=>{
     const px=toX(p.lon),py=toY(p.lat);
     ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(px,py,5.5,0,Math.PI*2);ctx.fill();
@@ -1175,8 +1071,6 @@ function genMap(){
     ctx.fillStyle=C.accent;ctx.font="8px 'IBM Plex Mono',monospace";
     ctx.fillText(p.val.toFixed(0)+(p.unit?" "+p.unit:""),px+8,py+14);
   });
-
-  /* ── stats ── */
   const mean=pts.reduce((a,b)=>a+b.val,0)/pts.length;
   const std=Math.sqrt(pts.reduce((a,b)=>a+(b.val-mean)**2,0)/pts.length);
   const med=[...pts.map(p=>p.val)].sort((a,b)=>a-b)[Math.floor(pts.length/2)];
@@ -1195,10 +1089,7 @@ function genMap(){
     </div>
     <div class="metric" style="margin-top:8px"><div class="m-lbl">Longitude Range</div><div style="font-size:11px;color:var(--txt);font-family:monospace;margin-top:4px">${minLon.toFixed(5)}° — ${maxLon.toFixed(5)}°</div></div>
     <div class="metric" style="margin-top:8px"><div class="m-lbl">Latitude Range</div><div style="font-size:11px;color:var(--txt);font-family:monospace;margin-top:4px">${minLat.toFixed(5)}° — ${maxLat.toFixed(5)}°</div></div>`;
-
-  /* colour scale legend */
   const stops=["rgba(0,40,180,1)","rgba(0,100,255,1)","rgba(0,210,210,1)","rgba(0,200,80,1)","rgba(255,220,0,1)","rgba(255,80,0,1)","rgba(200,0,0,1)"];
-  const nL2=nL;
   document.getElementById("t-legend").innerHTML=`
     <div class="clr-bar">${stops.map(s=>`<div style="flex:1;background:${s}"></div>`).join("")}</div>
     <div class="clr-lbls">
