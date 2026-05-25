@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>GeoPhysAI v3 — Intelligent Geophysical Interpretation System</title>
+<title>GeoPhysAI v8 — Intelligent Geophysical Interpretation System</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <style>
@@ -161,22 +161,6 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
 </head>
 <body>
 
-<!-- API KEY OVERLAY -->
-<div id="key-overlay">
-  <div class="key-card">
-    <h2>GEOPHYS<span style="color:var(--txt)">AI</span></h2>
-    <p>Enter your Anthropic API key to enable AI-powered geological interpretation. Your key is stored only in this browser session and is never sent anywhere except Anthropic's servers.</p>
-    <input type="password" class="key-input" id="api-key-input" placeholder="sk-ant-api03-…" />
-    <button class="btn btn-pri" style="width:100%;justify-content:center;padding:11px;font-size:12px;background:var(--acc);color:#070d0f" onclick="saveKey()">
-      Continue to GeoPhysAI →
-    </button>
-    <div class="key-note">
-      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
-      Key is stored in memory only — cleared when you close this tab.
-    </div>
-  </div>
-</div>
-
 <!-- HEADER -->
 <div id="hdr">
   <div class="logo-wrap">
@@ -187,14 +171,10 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
     </div>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
-    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--mut);font-family:monospace">
-      <div class="api-dot" id="api-dot"></div>
-      <span id="api-status-text">No key</span>
-    </div>
-    <span class="badge" style="color:var(--acc)">v3.0</span>
+    <span class="badge" style="color:var(--acc)">v8.0</span>
     <span class="badge" style="color:var(--amb)">AI POWERED</span>
     <span class="badge" style="color:var(--blu)">10 METHODS</span>
-    <button class="btn btn-mut" style="padding:4px 10px;font-size:10px" onclick="showKeyOverlay()">🔑 API Key</button>
+    <span class="badge" style="color:var(--grn)">DYNAMIC DATA</span>
   </div>
 </div>
 
@@ -214,28 +194,11 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono','Courier 
 "use strict";
 
 /* ═══════════════════════════════════════════════════════════
-   API KEY
+   CLAUDE ENVIRONMENT — no API key needed, auth handled
 ═══════════════════════════════════════════════════════════ */
-let API_KEY = "";
-
-function saveKey(){
-  const val=document.getElementById("api-key-input").value.trim();
-  if(!val.startsWith("sk-")){alert("Please enter a valid Anthropic API key (starts with sk-)");return;}
-  API_KEY=val;
-  document.getElementById("key-overlay").style.display="none";
-  document.getElementById("api-dot").classList.add("ready");
-  document.getElementById("api-status-text").textContent="Key active";
-}
-
-function showKeyOverlay(){
-  document.getElementById("key-overlay").style.display="flex";
-  document.getElementById("api-key-input").value=API_KEY;
-}
-
-document.addEventListener("DOMContentLoaded",()=>{
-  const inp=document.getElementById("api-key-input");
-  if(inp) inp.addEventListener("keydown",e=>{if(e.key==="Enter") saveKey();});
-});
+let API_KEY = "claude-env"; // signals we're running inside claude.ai
+function saveKey(){}
+function showKeyOverlay(){}
 
 /* ═══════════════════════════════════════════════════════════
    PALETTE  (exact original C object)
@@ -284,17 +247,91 @@ const SAMPLE={
 };
 
 /* ═══════════════════════════════════════════════════════════
-   VES LAYER MODEL  (NEW — core of the enhancement)
+   VES LAYER MODEL  — default sample layers (used only with sample data)
+   When real CSV is uploaded, layers are dynamically derived from the data.
    Cumulative depths are computed from thick values.
 ═══════════════════════════════════════════════════════════ */
-const VES_LAYERS=[
+const DEFAULT_VES_LAYERS=[
   {n:1,name:"Topsoil / Laterite",       res:85,   thick:3,   dens:1.65,cls:"amb",lbl:"Dry Overburden",      target:""},
   {n:2,name:"Weathered Zone",            res:32,   thick:8,   dens:1.80,cls:"amb",lbl:"Partly Saturated",    target:""},
   {n:3,name:"Clayey Sand (Aquitard)",    res:18,   thick:11,  dens:1.95,cls:"pur",lbl:"Protective Aquitard", target:""},
   {n:4,name:"Fractured Basement",        res:220,  thick:12,  dens:2.10,cls:"grn",lbl:"★ Primary Aquifer",   target:"AQUIFER"},
   {n:5,name:"Fresh Basement Rock",       res:4800, thick:null,dens:2.65,cls:"red",lbl:"Resistive Bedrock",   target:""},
 ];
-const VES_RMS=3.2; // % RMS misfit for the 5-layer model
+const DEFAULT_VES_RMS=3.2;
+
+/* Derive VES layers dynamically from uploaded resistivity sounding data.
+   Uses a simple segmentation: groups the rho_a curve into monotone runs
+   and assigns geological labels by resistivity magnitude.               */
+function deriveVESLayers(data){
+  if(!data||data.length<2) return {layers:DEFAULT_VES_LAYERS,rms:DEFAULT_VES_RMS};
+  const sorted=[...data].sort((a,b)=>a.ab2-b.ab2);
+  /* estimate layer count from inflection points in rho_a (simplified) */
+  const rhoVals=sorted.map(r=>r.rho_a).filter(v=>!isNaN(v));
+  if(rhoVals.length<2) return {layers:DEFAULT_VES_LAYERS,rms:DEFAULT_VES_RMS};
+
+  /* find direction changes to detect layer boundaries */
+  const boundaries=[];
+  for(let i=1;i<rhoVals.length-1;i++){
+    const d1=rhoVals[i]-rhoVals[i-1];
+    const d2=rhoVals[i+1]-rhoVals[i];
+    if(d1*d2<0) boundaries.push(i); /* sign change = inflection */
+  }
+
+  /* build layer segments between boundaries */
+  const segments=[];
+  const bp=[0,...boundaries,rhoVals.length-1];
+  for(let s=0;s<bp.length-1;s++){
+    const segRho=rhoVals.slice(bp[s],bp[s+1]+1);
+    const meanRho=segRho.reduce((a,b)=>a+b,0)/segRho.length;
+    const ab2Start=sorted[bp[s]].ab2;
+    const ab2End=sorted[bp[s+1]].ab2;
+    /* crude depth estimate: depth ≈ AB/2 × 0.4 for Schlumberger */
+    const depthEst=Math.round(ab2Start*0.4);
+    const thickEst=s<bp.length-2?Math.round((ab2End-ab2Start)*0.4):null;
+    segments.push({meanRho,depthEst,thickEst,ab2Start,ab2End});
+  }
+
+  /* assign geology by resistivity */
+  function geoLabel(rho){
+    if(rho<8)  return {name:"Saline/Clay Zone",    dens:1.90,cls:"red",lbl:"Saline / Clay",        target:""};
+    if(rho<25) return {name:"Conductive Clay",      dens:1.85,cls:"pur",lbl:"Clayey Overburden",    target:""};
+    if(rho<60) return {name:"Weathered Zone",        dens:1.80,cls:"amb",lbl:"Partly Saturated",     target:""};
+    if(rho<150)return {name:"Fractured/Sat. Zone",  dens:2.05,cls:"grn",lbl:"Possible Aquifer",     target:"AQUIFER"};
+    if(rho<500)return {name:"Fractured Basement",   dens:2.10,cls:"grn",lbl:"★ Primary Aquifer",    target:"AQUIFER"};
+    if(rho<2000)return{name:"Weathered Basement",   dens:2.40,cls:"blu",lbl:"Resistive Basement",   target:""};
+    return              {name:"Fresh Basement Rock", dens:2.65,cls:"red",lbl:"Resistive Bedrock",    target:""};
+  }
+
+  /* cap at 6 layers for readability */
+  const useSegs=segments.slice(0,6);
+  const layers=useSegs.map((seg,i)=>{
+    const geo=geoLabel(seg.meanRho);
+    return {
+      n:i+1,
+      name:geo.name,
+      res:Math.round(seg.meanRho),
+      thick:seg.thickEst,
+      dens:geo.dens,
+      cls:geo.cls,
+      lbl:geo.lbl,
+      target:geo.target,
+    };
+  });
+
+  /* simple RMS estimate: compare smoothed curve to raw */
+  const smoothed=sorted.map((_,i)=>{
+    const w=rhoVals.slice(Math.max(0,i-1),i+2);
+    return w.reduce((a,b)=>a+b,0)/w.length;
+  });
+  const rmsCalc=Math.sqrt(sorted.reduce((acc,r,i)=>{
+    const diff=(r.rho_a-smoothed[i])/(r.rho_a||1);
+    return acc+diff*diff;
+  },0)/sorted.length)*100;
+  const rms=Math.min(15,Math.max(0.5,+rmsCalc.toFixed(1)));
+
+  return {layers,rms};
+}
 
 /* ═══════════════════════════════════════════════════════════
    APP STATE
@@ -302,6 +339,8 @@ const VES_RMS=3.2; // % RMS misfit for the 5-layer model
 const S={
   active:"ves",
   data:{...SAMPLE},
+  vesLayers:[...DEFAULT_VES_LAYERS],
+  vesRms:DEFAULT_VES_RMS,
   aiText:{},loading:{},error:{},uploadName:{},
   chartInst:null,
   terrainPts:[
@@ -344,7 +383,7 @@ function metricDefs(id){
   const s=computeStats(id);
   return({
     ves:[{l:"Min ρₐ",v:s?.min,u:"Ω·m"},{l:"Max ρₐ",v:s?.max,u:"Ω·m"},
-         {l:"Layers Detected",v:"5",u:""},{l:"RMS Misfit",v:VES_RMS+"%",u:""}],
+         {l:"Layers Detected",v:String(S.vesLayers.length),u:""},{l:"RMS Misfit",v:S.vesRms+"%",u:""}],
     ert:[{l:"Min ρ",v:s?.min,u:"Ω·m"},{l:"Max ρ",v:s?.max,u:"Ω·m"},
          {l:"Profile Length",v:"120",u:"m"},{l:"Investigation Depth",v:"28",u:"m"}],
     ip:[{l:"Peak Chargeability",v:"48",u:"ms"},{l:"Background",v:"5–12",u:"ms"},
@@ -370,11 +409,11 @@ function metricDefs(id){
    METHOD GUIDES  (original text preserved + 6 new)
 ═══════════════════════════════════════════════════════════ */
 const GUIDE={
-  ves:`<b style="color:var(--txt)">Rising curve</b> → resistivity increases with depth<br>
-<b style="color:var(--txt)">H-type</b> (low middle) → conductive layer between resistive<br>
-<b style="color:var(--txt)">K-type</b> (high middle) → resistive layer between conductive<br>
-<b style="color:var(--txt)">A-type</b> → uniformly increasing resistivity<br>
-<b style="color:var(--txt)">Q-type</b> → uniformly decreasing resistivity<br>
+  ves:`<b style="color:var(--txt)">H-type</b> (low middle) → conductive layer between resistive layers<br>
+<b style="color:var(--txt)">K-type</b> (high middle) → resistive layer between conductive layers<br>
+<b style="color:var(--txt)">A-type</b> → uniformly increasing resistivity with depth<br>
+<b style="color:var(--txt)">Q-type</b> → uniformly decreasing resistivity with depth<br>
+<b style="color:var(--txt)">KHA compound</b> → resistive surface (K) → conductive weathered zone (H) → strongly ascending basement (A); classic crystalline basement tropical profile<br>
 <span style="color:var(--acc)">Typical values (Ω·m):</span> Clay 1–20 · Sand 50–500 · Rock &gt;1000`,
   ert:`<b style="color:var(--txt)">Low ρ zones</b> → clay, water-saturated, saline<br>
 <b style="color:var(--txt)">High ρ zones</b> → dry rock, gravel, air voids<br>
@@ -420,9 +459,10 @@ const GUIDE={
 ═══════════════════════════════════════════════════════════ */
 function anomalyHTML(id){
   if(id==="ves"){
-    /* Build stratigraphy rows with cumulative depths */
+    /* Build stratigraphy rows with cumulative depths — from LIVE state, not hardcoded */
+    const layers=S.vesLayers;
     let cum=0;
-    const rows=VES_LAYERS.map(l=>{
+    const rows=layers.map(l=>{
       const top=cum;
       const base=l.thick?cum+l.thick:null;
       if(l.thick) cum+=l.thick;
@@ -453,7 +493,11 @@ function anomalyHTML(id){
         <th style="color:var(--acc)">Target</th>
       </tr></thead>
       <tbody>${rows}</tbody>
-    </table></div>`;
+    </table></div>
+    <div style="font-size:10px;color:var(--mut);margin-top:8px;font-family:monospace">
+      ${S.uploadName.ves?`📂 Derived from uploaded data: <span style="color:var(--acc)">${esc(S.uploadName.ves)}</span>`:"📋 Showing default sample-data model — upload your CSV for dynamic layer derivation"}
+      &nbsp;·&nbsp; RMS = ${S.vesRms}%
+    </div>`;
   }
   const tbls={
     ert:`<div style="overflow-x:auto"><table class="lt">
@@ -523,71 +567,68 @@ function anomalyHTML(id){
    AI CALL  (exact original streaming pattern)
 ═══════════════════════════════════════════════════════════ */
 async function callAI(prompt,onChunk){
-  if(!API_KEY){showKeyOverlay();throw new Error("No API key — please enter your Anthropic key.");}
-
-  /* ── attempt streaming request ── */
   let res;
   try{
     res=await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
-        "x-api-key":API_KEY,
         "anthropic-version":"2023-06-01",
         "anthropic-dangerous-allow-browser":"true"
       },
       body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",max_tokens:4000,stream:true,
+        model:"claude-sonnet-4-20250514",max_tokens:8096,stream:true,
         temperature:0,
-        system:`You are GeoPhysAI — expert applied geophysicist. Respond ONLY using the schema below. Every numbered item is MANDATORY — never skip or shorten any field. Use correct SI units (Ω·m, nT, mGal, ms, g/cm³). Be technically precise.
+        system:`You are GeoPhysAI — expert applied geophysicist. Respond ONLY using the mandatory schema below. Every numbered item is REQUIRED — never skip, reorder, or omit any field.
 
-MANDATORY OUTPUT SCHEMA:
+ANTI-DRIFT RULES (strictly enforced):
+• COPY the locked values from GROUND_TRUTH in the user prompt verbatim — do NOT recompute or restate them differently.
+• Each sub-field answer is ONE sentence only (two sentences maximum for 1a and 2b). No paragraphs.
+• Do NOT add headers, markdown bold (**), asterisks, extra sections, or commentary outside schema fields.
+• Curve type label: use EXACTLY the label given in GROUND_TRUTH — do not reinterpret.
+• Dar Zarrouk: use EXACTLY the S and T values from GROUND_TRUTH — show the working as provided, do not recalculate.
+• Layer lines: output EXACTLY as L[n] | [Name] | Depth: X-Y m | rho: Z Ω·m | h: W m | density: V g/cm³ | [one phrase] — no deviations.
+• Quality / Confidence / Yield / Water quality ratings: use the EXACT word from GROUND_TRUTH.
+• Do not write "Note:", "Summary:", "Conclusion:", or any non-schema text.
+
+MANDATORY OUTPUT SCHEMA (fill every field — use GROUND_TRUTH values where supplied):
 
 1. DATA QUALITY ASSESSMENT
-1a. Outliers/anomalous readings: list values and probable cause
-1b. RMS misfit: state value, verdict — GOOD <5% / FAIR 5-10% / POOR >10%
-1c. Data coverage: n points, electrode range, effective depth of investigation (m)
-1d. Quality rating: GOOD / MODERATE / POOR + one-sentence justification
+1a. Outliers/anomalous readings: [list flagged AB/2 values, their ρₐ, and probable cause — 2 sentences max]
+1b. RMS misfit: [value]% — verdict: [GOOD / FAIR / POOR]
+1c. Data coverage: n=[count] points, AB/2 range [min]–[max] m, effective depth of investigation ~[value] m
+1d. Quality rating: [GOOD / MODERATE / POOR] — [one-sentence justification]
 
 2. GEOPHYSICAL INTERPRETATION
-2a. Curve type: label (e.g. KH / HA / KHA) + one-line definition
-2b. Anomaly character: describe inflections, peaks, troughs and geological meaning
-2c. Geological setting: inferred terrain type
+2a. Curve type: [EXACT label from GROUND_TRUTH] — [one-line definition of that curve type]
+2b. Anomaly character: [describe descending limb, trough, ascending limb and geological meaning — 2 sentences max]
+2c. Geological setting: [inferred terrain type — one sentence]
 
 3. SUBSURFACE MODEL
-List ALL layers, one per line, exactly as:
-L[n] | [Name] | Depth: [top]-[base] m | rho: [value] ohm.m | h: [thickness] m | density: [value] g/cm3 | [Geological identity and hydrogeological role]
-After layers, compute and state BOTH of:
-• Longitudinal Conductance S = sum(hi/rhoi) for conductive layers — value in Siemens + protective capacity rating (WEAK <0.1 / MODERATE 0.1-1.0 / STRONG >1.0)
-• Transverse Resistance T = sum(hi x rhoi) for aquifer/resistive layers — value in ohm.m2
+[Output ALL layers one per line in exact format — copy from GROUND_TRUTH]
+[Then output S calculation block exactly as in GROUND_TRUTH]
+[Then output T calculation block exactly as in GROUND_TRUTH]
 
 4. TARGET ASSESSMENT
-4a. Target type: aquifer / ore body / void / other
-4b. Depth to top: value in m bgl
-4c. Depth to base: value in m bgl
-4d. Thickness: value in m
-4e. Resistivity: value in ohm.m
-4f. Confidence level: HIGH / MODERATE / LOW + one-sentence justification
+4a. Target type: [from GROUND_TRUTH]
+4b. Depth to top: [from GROUND_TRUTH] m bgl
+4c. Depth to base: [from GROUND_TRUTH] m bgl
+4d. Thickness: [from GROUND_TRUTH] m
+4e. Resistivity: [from GROUND_TRUTH] Ω·m
+4f. Confidence level: [EXACT rating from GROUND_TRUTH] — [one-sentence justification]
 
 5. DRILLING RECOMMENDATIONS
-5a. Recommended total depth (TD): value in m
-5b. Casing depth: value in m
-5c. Screen interval: top-base m
-5d. Expected yield: LOW / MODERATE / HIGH
-5e. Water quality prediction: FRESH / BRACKISH / SALINE + justification
-5f. Follow-up surveys recommended: list all relevant methods`,
+5a. Recommended total depth (TD): [from GROUND_TRUTH] m
+5b. Casing depth: [from GROUND_TRUTH] m
+5c. Screen interval: [from GROUND_TRUTH] m
+5d. Expected yield: [EXACT word from GROUND_TRUTH]
+5e. Water quality prediction: [EXACT word from GROUND_TRUTH] — [one-sentence justification based on aquifer resistivity]
+5f. Follow-up surveys recommended: [comma-separated list from GROUND_TRUTH]`,
         messages:[{role:"user",content:prompt}],
       }),
     });
   }catch(fetchErr){
-    /* Network / CORS failure — give a clear actionable message */
-    throw new Error(
-      "Network error — cannot reach Anthropic API.\n\n"+
-      "Most common fix: open this file via a local server, not by double-clicking.\n"+
-      "In your terminal, run:  python -m http.server 8000\n"+
-      "Then open:  http://localhost:8000/GeoPhysAI_v3_fixed.html\n\n"+
-      "(Original error: "+fetchErr.message+")"
-    );
+    throw new Error("Network error — cannot reach Anthropic API. ("+fetchErr.message+")");
   }
 
   /* ── check HTTP status ── */
@@ -636,16 +677,120 @@ function buildPrompt(id){
     ip:"Induced Polarization Survey",sp:"Self-Potential Survey",em:"Electromagnetic Survey (EM34)",
     gpr:"Ground Penetrating Radar (250 MHz)",magnetic:"Ground Magnetic Survey (TMF + RTP)",
     gravity:"Ground Gravity Survey (Bouguer + Free-Air)",sref:"Seismic Refraction Survey",srefl:"Seismic Reflection Survey"};
+  /* ── Build dynamic VES GROUND_TRUTH from actual loaded data ── */
+  function buildVesGT(data, layers, rms){
+    const sorted=[...data].sort((a,b)=>a.ab2-b.ab2);
+    const rhoArr=sorted.map(r=>r.rho_a).filter(v=>!isNaN(v));
+    const n=sorted.length;
+    const ab2Min=sorted[0]?.ab2||0, ab2Max=sorted[n-1]?.ab2||0;
+    const depthInv=Math.round(ab2Max*0.4);
+
+    /* outlier detection: flag points >2 std dev from local mean */
+    let outlierLines="";
+    const mean=rhoArr.reduce((a,b)=>a+b,0)/rhoArr.length;
+    const std=Math.sqrt(rhoArr.reduce((acc,v)=>acc+(v-mean)**2,0)/rhoArr.length);
+    sorted.forEach(r=>{
+      if(Math.abs(r.rho_a-mean)>2.5*std){
+        outlierLines+=`\n• AB/2=${r.ab2}m → rho=${r.rho_a.toFixed(2)} Ohm.m: statistical outlier (>2.5σ from mean ${mean.toFixed(0)} Ω·m); field verification recommended.`;
+      }
+    });
+    if(!outlierLines) outlierLines="\n• No statistically significant outliers detected at 2.5σ threshold.";
+
+    /* curve type */
+    const first=rhoArr[0],mid=rhoArr[Math.floor(rhoArr.length/2)],last=rhoArr[rhoArr.length-1];
+    let curveType="KHA compound";
+    if(first<mid&&mid>last) curveType="K-type — resistive middle layer between two conductive layers";
+    else if(first>mid&&mid<last) curveType="H-type — conductive middle layer between two resistive layers";
+    else if(first<mid&&mid<last) curveType="A-type — uniformly ascending (increasing resistivity with depth)";
+    else if(first>mid&&mid>last) curveType="Q-type — uniformly descending (decreasing resistivity with depth)";
+    else curveType="KHA compound — resistive surface (K), conductive weathered zone (H), ascending basement (A); classic crystalline basement tropical profile";
+
+    /* quality */
+    const qualWord=rms<5?"GOOD":rms<10?"MODERATE":"POOR";
+    const coverWord=n>=15?"GOOD":n>=8?"MODERATE":"LIMITED";
+
+    /* layer lines */
+    let cum=0;
+    const layerLines=layers.map(l=>{
+      const top=cum, base=l.thick?cum+l.thick:null;
+      if(l.thick) cum+=l.thick;
+      const desc=l.res<25?"Conductive clay or saturated zone":
+        l.res<80?"Weathered zone with partial saturation":
+        l.res<300?"Possible aquifer or fractured zone":
+        l.res<2000?"Resistive basement or hard rock":
+        "Competent crystalline basement";
+      return `L${l.n} | ${l.name} | Depth: ${top}-${base!==null?base:"inf"} m | rho: ${l.res} Ohm.m | h: ${l.thick||"inf"} m | density: ${l.dens} g/cm3 | ${desc}`;
+    }).join("\n");
+
+    /* Dar Zarrouk S — overburden layers */
+    const overb=layers.filter(l=>!l.target&&l.thick);
+    let Swork=overb.map(l=>`(${l.thick}/${l.res})`).join(" + ");
+    const Sval=overb.reduce((acc,l)=>acc+(l.thick/l.res),0);
+    const Scat=Sval<0.1?"WEAK":Sval<1.0?"MODERATE":"STRONG";
+    const Sline=`S = ${Swork} = ${Sval.toFixed(4)}\nS = ${Sval.toFixed(3)} Siemens — Protective capacity: ${Scat}`;
+
+    /* Dar Zarrouk T — aquifer layer */
+    const aqL=layers.find(l=>l.target==="AQUIFER");
+    const Tline=aqL?`T = h${aqL.n} x rho${aqL.n} = ${aqL.thick} x ${aqL.res}\nT = ${aqL.thick*aqL.res} Ohm.m2`:"T = N/A (no aquifer layer detected)";
+
+    /* target */
+    const aqTop=aqL?(()=>{let c=0;for(const l of layers){if(l===aqL)return c;if(l.thick)c+=l.thick;}return 0;})():null;
+    const aqBase=aqTop!==null&&aqL?.thick?aqTop+aqL.thick:null;
+    const td=aqBase?Math.round(aqBase+9):Math.round(depthInv+10);
+    const waterQ=aqL&&aqL.res>=80?"FRESH — aquifer resistivity well above brackish threshold; consistent with low TDS":"SUSPECT — low resistivity may indicate salinity or clay contamination; chemical analysis required";
+    const yield_=aqL&&aqL.thick>=10?"MODERATE":"LOW";
+
+    return `
+GROUND_TRUTH (derived dynamically from uploaded dataset — do NOT replace with prior hardcoded values):
+DATA SOURCE: ${S.uploadName.ves||"Loaded dataset"} — ${n} measurements, AB/2 ${ab2Min}–${ab2Max} m
+
+FLAGGED OUTLIERS:${outlierLines}
+
+RMS MISFIT: ${rms}% — ${qualWord}
+DATA COVERAGE: n=${n} points; AB/2 range ${ab2Min}-${ab2Max} m; effective depth of investigation ~${depthInv} m
+QUALITY RATING: ${coverWord} — ${rms<5?"Low RMS misfit and adequate data spread":"RMS misfit and/or data coverage suggests interpret results with caution"}
+
+CURVE TYPE: ${curveType}
+
+LAYER LINES (output exactly as shown, one per line):
+${layerLines}
+
+DAR ZARROUK S (copy working exactly):
+${Sline}
+
+DAR ZARROUK T (copy working exactly):
+${Tline}
+
+TARGET TYPE: ${aqL?"Fractured/saturated aquifer zone":"No clear aquifer target detected"}
+DEPTH TO TOP: ${aqTop!==null?aqTop+"":"N/A"} m bgl
+DEPTH TO BASE: ${aqBase!==null?aqBase+"":"N/A"} m bgl
+THICKNESS: ${aqL?.thick||"N/A"} m
+AQUIFER RESISTIVITY: ${aqL?.res||"N/A"} Ohm.m
+CONFIDENCE: ${Sval>0.5&&aqL?"MODERATE":"LOW"} — model derived from ${n} data points with RMS ${rms}%; ${n<10?"limited electrode spread reduces depth resolution":"adequate spread for target depth"}
+
+TD: ${td} m
+CASING DEPTH: ${aqTop!==null?aqTop:"N/A"} m
+SCREEN INTERVAL: ${aqTop!==null&&aqBase!==null?`${aqTop}-${aqBase}`:"N/A"} m
+EXPECTED YIELD: ${yield_}
+WATER QUALITY: ${waterQ}
+FOLLOW-UP: 2D ERT profiling, seismic refraction, VLF-EM survey, borehole geophysical logging, pumping test`;
+  }
+
+  const isUploaded=!!(S.uploadName[id]);
+  const vesGT=id==="ves"
+    ? buildVesGT(S.data.ves||[], S.vesLayers, S.vesRms)
+    : "";
+
   const extras={
-    ves:`\nInterpreted 5-layer model (for reference):\n${VES_LAYERS.map(l=>`L${l.n}: ${l.name} — ${l.res} Ω·m, ${l.thick?l.thick+"m thick":""}, ρ=${l.dens} g/cm³`).join("\n")}\nCurrent RMS misfit: ${VES_RMS}%\nDepth to aquifer: 34–46 m  Aquifer thickness: 12 m  Aquifer resistivity: 220 Ω·m`,
+    ves:vesGT,
     ip:"\nNote: chargeability >20 ms is diagnostic of sulphide mineralisation.",
-    sp:"\nNote: Negative SP anomaly → oxidising sulphide body (Sato-Mooney electrochemical model).",
+    sp:"\nNote: Negative SP anomaly -> oxidising sulphide body (Sato-Mooney electrochemical model).",
   };
   return `Method: ${names[id]||id.toUpperCase()}
 Data statistics: min=${s.min}, max=${s.max}, range=${s.spread}, n=${s.points} points
 Full dataset: ${JSON.stringify(d)}${extras[id]||""}
 
-Follow the mandatory output schema exactly. Every section and sub-item is required. Do not omit any field.`;
+INSTRUCTION: Follow the mandatory output schema exactly. Copy all GROUND_TRUTH values verbatim. Every section and sub-item is required. Do not omit, reorder, or add any field.`;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -728,6 +873,42 @@ function render(){
   /* VES extra panels (IX1D enhanced) */
   let vesExtra="";
   if(id==="ves"){
+    /* compute live aquifer metrics from S.vesLayers */
+    const aqLayer=S.vesLayers.find(l=>l.target==="AQUIFER");
+    let aqTop=0,aqBase=0,aqThick=0,aqRes=220,aqDens=2.10;
+    let cum2=0;
+    for(const l of S.vesLayers){
+      if(l.target==="AQUIFER"){
+        aqTop=cum2;
+        aqThick=l.thick||12;
+        aqBase=cum2+aqThick;
+        aqRes=l.res;
+        aqDens=l.dens;
+        break;
+      }
+      if(l.thick) cum2+=l.thick;
+    }
+    const tdRecommended=Math.round(aqBase+9); /* TD = aquifer base + 9 m buffer */
+    const casingDepth=aqTop;
+    const screenTop=aqTop, screenBase=aqBase;
+    /* Dar Zarrouk S = sum(h/rho) for overburden layers */
+    const overburden=S.vesLayers.filter(l=>!l.target);
+    const Sval=overburden.reduce((acc,l)=>acc+(l.thick?l.thick/l.res:0),0);
+    const Scat=Sval<0.1?"WEAK":Sval<1.0?"MODERATE":"STRONG";
+    /* T = h * rho of aquifer layer */
+    const Tval=aqThick*aqRes;
+    /* curve type: detect from rho_a shape */
+    const rhoArr=(S.data.ves||[]).map(r=>r.rho_a).filter(v=>!isNaN(v));
+    let curveType="—";
+    if(rhoArr.length>=3){
+      const first=rhoArr[0],mid=rhoArr[Math.floor(rhoArr.length/2)],last=rhoArr[rhoArr.length-1];
+      if(first<mid&&mid>last) curveType="K-type";
+      else if(first>mid&&mid<last) curveType="H-type";
+      else if(first<mid&&mid<last) curveType="A-type";
+      else if(first>mid&&mid>last) curveType="Q-type";
+      else curveType="KHA compound";
+    }
+
     vesExtra=`
     <!-- IX1D BOREHOLE COLUMN -->
     <div class="panel">
@@ -744,7 +925,7 @@ function render(){
     </div>
     <!-- VES LAYER TABLE -->
     <div class="panel">
-      <div class="sec" style="color:${col}">Detailed Layer Stratigraphy — 1D Earth Model (${VES_LAYERS.length} Layers · RMS = ${VES_RMS}%)</div>
+      <div class="sec" style="color:${col}">Detailed Layer Stratigraphy — 1D Earth Model (${S.vesLayers.length} Layers · RMS = ${S.vesRms}%)</div>
       ${anomalyHTML("ves")}
     </div>
     <!-- VES AQUIFER PANEL -->
@@ -752,23 +933,25 @@ function render(){
       <div class="panel">
         <div class="sec" style="color:${col}">Aquifer / Ore Body — Target Analysis</div>
         <div class="g4" style="margin-bottom:14px">
-          <div class="metric"><div class="m-lbl">Depth to Aquifer Top</div><div class="m-val" style="color:var(--grn);font-size:18px">34.0<span class="m-unit">m</span></div></div>
-          <div class="metric"><div class="m-lbl">Depth to Aquifer Base</div><div class="m-val" style="color:var(--grn);font-size:18px">46.0<span class="m-unit">m</span></div></div>
-          <div class="metric"><div class="m-lbl">Aquifer Thickness</div><div class="m-val" style="color:var(--acc);font-size:18px">12<span class="m-unit">m</span></div></div>
-          <div class="metric"><div class="m-lbl">Aquifer Resistivity</div><div class="m-val" style="color:var(--acc);font-size:18px">220<span class="m-unit">Ω·m</span></div></div>
+          <div class="metric"><div class="m-lbl">Depth to Aquifer Top</div><div class="m-val" style="color:var(--grn);font-size:18px">${aqTop.toFixed(1)}<span class="m-unit">m</span></div></div>
+          <div class="metric"><div class="m-lbl">Depth to Aquifer Base</div><div class="m-val" style="color:var(--grn);font-size:18px">${aqBase.toFixed(1)}<span class="m-unit">m</span></div></div>
+          <div class="metric"><div class="m-lbl">Aquifer Thickness</div><div class="m-val" style="color:var(--acc);font-size:18px">${aqThick}<span class="m-unit">m</span></div></div>
+          <div class="metric"><div class="m-lbl">Aquifer Resistivity</div><div class="m-val" style="color:var(--acc);font-size:18px">${aqRes.toLocaleString()}<span class="m-unit">Ω·m</span></div></div>
         </div>
         <div class="g4">
-          <div class="metric"><div class="m-lbl">Aquifer Density Est.</div><div class="m-val" style="color:var(--pur);font-size:18px">2.10<span class="m-unit">g/cm³</span></div></div>
-          <div class="metric"><div class="m-lbl">Curve Type</div><div class="m-val" style="color:var(--amb);font-size:18px">KH<span class="m-unit">type</span></div></div>
-          <div class="metric"><div class="m-lbl">Model RMS Fit</div><div class="m-val" style="color:var(--acc);font-size:18px">${VES_RMS}<span class="m-unit">%</span></div></div>
-          <div class="metric"><div class="m-lbl">Recommended Depth</div><div class="m-val" style="color:var(--grn);font-size:18px">50<span class="m-unit">m</span></div></div>
+          <div class="metric"><div class="m-lbl">Aquifer Density Est.</div><div class="m-val" style="color:var(--pur);font-size:18px">${aqDens}<span class="m-unit">g/cm³</span></div></div>
+          <div class="metric"><div class="m-lbl">Curve Type</div><div class="m-val" style="color:var(--amb);font-size:14px">${curveType}<span class="m-unit"></span></div></div>
+          <div class="metric"><div class="m-lbl">Model RMS Fit</div><div class="m-val" style="color:var(--acc);font-size:18px">${S.vesRms}<span class="m-unit">%</span></div></div>
+          <div class="metric"><div class="m-lbl">Recommended Depth</div><div class="m-val" style="color:var(--grn);font-size:18px">${tdRecommended}<span class="m-unit">m</span></div></div>
         </div>
         <div class="ibox" style="border-left-color:var(--grn)">
-          <h4 style="color:var(--grn)">Hydrogeological Assessment</h4>
-          Fractured basement aquifer confirmed at <strong style="color:var(--grn)">34–46 m depth</strong>. Resistivity of 220 Ω·m indicates fresh, potable groundwater.
-          Overlying clay aquitard (Layer 3, 11 m thick, 1.95 g/cm³) provides natural protection from surface contamination.
-          <br><br><strong style="color:var(--acc)">Borehole recommendation:</strong> Drill to 50 m · Case 6″ to 32 m · Screen 34–46 m.
-          Expected yield: moderate–high. Water quality: likely fresh (non-saline). Confirm with Dar Zarrouk parameter analysis.
+          <h4 style="color:var(--grn)">Hydrogeological Assessment${S.uploadName.ves?` — <span style="color:var(--acc)">${esc(S.uploadName.ves)}</span>`:""}</h4>
+          ${aqLayer?`Fractured/saturated aquifer horizon identified at <strong style="color:var(--grn)">${aqTop.toFixed(1)}–${aqBase.toFixed(1)} m depth</strong>. Resistivity of ${aqRes.toLocaleString()} Ω·m — ${aqRes>=80?"fresh, potable groundwater likely (TDS &lt; 500 mg/L)":"possible saline or clay contamination — further testing required"}.`:"No aquifer layer detected in the derived model — review your data or adjust CSV column mappings."}
+          ${Sval>0?`Longitudinal conductance S = ${Sval.toFixed(3)} S — <strong>${Scat}</strong> protective capacity.`:""}
+          <br><br><strong style="color:var(--acc)">Borehole recommendation:</strong> Drill to <strong>${tdRecommended} m</strong> TD · Case solid from 0–${casingDepth.toFixed(0)} m · Screen ${screenTop.toFixed(0)}–${screenBase.toFixed(0)} m.
+          ${aqRes>=80?"Expected yield: MODERATE to GOOD. Water quality: FRESH. Test for fluoride, iron, and manganese at wellhead.":"Low resistivity aquifer — test for salinity, TDS, and suitability before drilling."}
+          ${Sval>0?`<br><br><strong style="color:var(--acc)">Dar Zarrouk:</strong> S = ${Sval.toFixed(3)} S (${Scat} protection) · T = ${Tval.toFixed(0)} Ω·m² (${Tval>=500?"productive":"limited"} aquifer transmissivity).`:""}
+          <br><strong style="color:var(--acc)">Follow-up:</strong> 2D ERT profiling, seismic refraction, VLF-EM survey, borehole geophysical logging, pumping test.
         </div>
       </div>
       <div class="panel">
@@ -986,7 +1169,10 @@ function handleFile(e,id){
           return obj;
         }).filter(r=>Object.values(r).some(v=>typeof v==="number"&&!isNaN(v)));
         if(rows.length===0){S.error[id]="CSV parsed but no numeric rows found.";render();return;}
-        S.data[id]=rows;S.aiText[id]="";render();
+        S.data[id]=rows;S.aiText[id]="";
+        /* re-derive VES layer model from real uploaded data */
+        if(id==="ves"){const d=deriveVESLayers(rows);S.vesLayers=d.layers;S.vesRms=d.rms;}
+        render();
       }else{
         /* ── two-column fallback (v2 behaviour): col0=x, col1=y ── */
         const fallbackKey=wantedKeys;
@@ -1002,6 +1188,8 @@ function handleFile(e,id){
         }
         if(rows.length===0){S.error[id]=`Could not parse CSV. Use headers: ${wantedKeys.join(", ")} — or two plain numeric columns.`;render();return;}
         S.data[id]=rows;S.aiText[id]="";
+        /* re-derive VES layer model from real uploaded data (fallback path) */
+        if(id==="ves"){const d=deriveVESLayers(rows);S.vesLayers=d.layers;S.vesRms=d.rms;}
         S.error[id]=``;/* clear any previous error */
         render();
         /* friendly notice */
@@ -1022,6 +1210,7 @@ function handleFile(e,id){
 ═══════════════════════════════════════════════════════════ */
 function resetData(id){
   S.data[id]=SAMPLE[id]?[...SAMPLE[id]]:[];
+  if(id==="ves"){S.vesLayers=[...DEFAULT_VES_LAYERS];S.vesRms=DEFAULT_VES_RMS;}
   S.aiText[id]="";S.uploadName[id]="";S.error[id]="";render();
 }
 
@@ -1032,36 +1221,45 @@ function formatAIText(raw,col,streaming=false){
   const lines=raw.split("\n");
   let html="";
   for(const line of lines){
-    const l=line.trimEnd();
+    /* strip markdown bold/italic and ## headings the AI sometimes emits */
+    let l=line.trimEnd()
+      .replace(/\*\*([^*]+)\*\*/g,"$1")
+      .replace(/\*([^*]+)\*/g,"$1")
+      .replace(/^#{1,3}\s+/,"")
+      .replace(/^---+$/,"");
+
     /* section divider ━━━ */
-    if(/^━+$/.test(l)){
-      html+=`<div style="border-top:1px solid ${col}30;margin:10px 0 4px"></div>`;
-    /* numbered heading  1. / 2. etc */
+    if(/^━+$/.test(l)||l.trim()==="---"||l.trim()===""){
+      html+=l.trim()===""?`<div style="height:4px"></div>`:`<div style="border-top:1px solid ${col}30;margin:10px 0 4px"></div>`;
+    /* numbered heading  1. / 2. / 3. etc */
     }else if(/^\d+\.\s+[A-Z]/.test(l)){
-      html+=`<div style="color:${col};font-weight:700;font-size:11px;letter-spacing:2px;margin:10px 0 4px;text-transform:uppercase">${esc(l)}</div>`;
-    /* sub-item  1a. / 4f. etc */
-    }else if(/^\s+\d+[a-f]\./.test(l)){
-      const parts=l.trim().match(/^(\d+[a-f]\.\s+[^:]+:\s*)(.*)$/);
+      html+=`<div style="color:${col};font-weight:700;font-size:11px;letter-spacing:2px;margin:12px 0 5px;text-transform:uppercase;border-bottom:1px solid ${col}20;padding-bottom:4px">${esc(l)}</div>`;
+    /* sub-item  1a. / 2b. / 5f. etc — with or without leading spaces */
+    }else if(/^\s*\d+[a-f]\.\s/.test(l)){
+      const parts=l.trim().match(/^(\d+[a-f]\.\s[^:]+:\s*)(.*)$/);
       if(parts){
-        html+=`<div style="display:flex;gap:6px;margin:3px 0 3px 10px"><span style="color:var(--mut);min-width:200px;font-size:11px">${esc(parts[1])}</span><span style="color:var(--txt);font-size:11px">${esc(parts[2])}</span></div>`;
+        html+=`<div style="display:flex;gap:8px;margin:4px 0 4px 8px;align-items:baseline">
+          <span style="color:var(--mut);min-width:195px;font-size:11px;flex-shrink:0">${esc(parts[1])}</span>
+          <span style="color:var(--txt);font-size:11px">${esc(parts[2])}</span>
+        </div>`;
       }else{
-        html+=`<div style="margin:3px 0 3px 10px;font-size:11px;color:var(--txt)">${esc(l.trim())}</div>`;
+        html+=`<div style="margin:4px 0 4px 8px;font-size:11px;color:var(--txt)">${esc(l.trim())}</div>`;
       }
-    /* bullet  • */
-    }else if(/^\s*[•·]\s/.test(l)){
-      html+=`<div style="margin:4px 0 4px 14px;font-size:11px;color:var(--txt)">${esc(l.trim())}</div>`;
+    /* bullet  • or - */
+    }else if(/^\s*[•·\-]\s/.test(l)){
+      html+=`<div style="margin:3px 0 3px 16px;font-size:11px;color:var(--txt)">${esc(l.trim().replace(/^[-•·]\s/,"• "))}</div>`;
     /* layer line  L1 | name | ... */
     }else if(/^\s*L\d+\s*\|/.test(l)){
       const cols=l.split("|").map(c=>c.trim());
-      html+=`<div style="display:grid;grid-template-columns:30px 1fr 1fr 1fr 1fr 2fr;gap:4px;margin:3px 0;padding:4px 8px;background:${col}08;border-left:2px solid ${col}40;border-radius:0 3px 3px 0;font-size:10px">
+      html+=`<div style="display:grid;grid-template-columns:28px 1fr 1fr 1fr 1fr 2fr;gap:4px;margin:3px 0;padding:5px 8px;background:${col}08;border-left:3px solid ${col}50;border-radius:0 3px 3px 0;font-size:10px;font-family:monospace">
         ${cols.map((c,i)=>`<span style="color:${i===0?col:i===5?"var(--mut)":"var(--txt)"}">${esc(c)}</span>`).join("")}
       </div>`;
-    /* empty line */
-    }else if(l.trim()===""){
-      html+=`<div style="height:4px"></div>`;
-    /* plain text */
+    /* Dar Zarrouk computed values (lines starting with S = or T = ) */
+    }else if(/^[ST]\s*=/.test(l.trim())){
+      html+=`<div style="margin:3px 0 3px 16px;font-size:11px;color:${col};font-family:monospace;font-weight:700">${esc(l.trim())}</div>`;
+    /* plain text / continuation */
     }else{
-      html+=`<div style="font-size:11px;color:var(--txt);margin:2px 0">${esc(l)}</div>`;
+      html+=`<div style="font-size:11px;color:var(--txt);margin:2px 0;line-height:1.7">${esc(l)}</div>`;
     }
   }
   if(streaming) html+=`<span class="blink" style="color:${col}">▋</span>`;
@@ -1377,9 +1575,9 @@ function drawBoreholeColumn(){
   const PAD_TOP=40, PAD_BOT=30, PAD_LEFT=58, COL_W=60, RHO_TRACK=100;
   const SVG_W = PAD_LEFT + COL_W + RHO_TRACK + 20;
 
-  /* compute cumulative depths */
+  /* compute cumulative depths — use S.vesLayers (dynamic from uploaded data) */
   let cum=0;
-  const layers=VES_LAYERS.map(l=>{
+  const layers=S.vesLayers.map(l=>{
     const top=cum; const base=l.thick?cum+l.thick:null;
     if(l.thick) cum+=l.thick;
     return {...l,top,base};
@@ -1394,9 +1592,18 @@ function drawBoreholeColumn(){
   const depthScale= (d)=> PAD_TOP + (d/totalVis)*(SVG_H-PAD_TOP-PAD_BOT);
 
   /* ── rho log scale ── */
+  /* FIX: enforce minimum 3-decade span so clustered high/low resistivity
+     values don't collapse the step-log track into a spike or thin line.
+     Also floor rhoMin at 1 Ω·m and ceil rhoMax at 100,000 Ω·m.          */
   const allRho=layers.map(l=>l.res);
-  const rhoMin=Math.min(...allRho)*0.5;
-  const rhoMax=Math.max(...allRho)*1.5;
+  const rawMin=Math.min(...allRho)*0.5;
+  const rawMax=Math.max(...allRho)*1.5;
+  const rhoMin=Math.max(1, rawMin);
+  const minDecadeSpan=3; // at least 3 log-decades (e.g. 1 → 1000)
+  const rhoMax=(()=>{
+    const span=Math.log10(rawMax)-Math.log10(rhoMin);
+    return span>=minDecadeSpan ? rawMax : rhoMin*Math.pow(10,minDecadeSpan);
+  })();
   const rhoX=(r)=>{
     const lf=Math.log10(Math.max(r,0.1));
     const l0=Math.log10(rhoMin); const l1=Math.log10(rhoMax);
@@ -1447,10 +1654,17 @@ function drawBoreholeColumn(){
   layers.forEach((l,i)=>{
     const yTop=depthScale(l.top);
     const yBase=l.base!==null?depthScale(l.base):depthScale(l.top+halfSpaceVis);
-    const h=Math.max(yBase-yTop,2);
+    /* FIX: track real pixel height separately; clamp to min=2 only for stroke */
+    const rawH=yBase-yTop;
+    const h=Math.max(rawH,2);
     const clr=clrMap[l.cls]||"#5a7f88";
     const pat=patMap[l.cls]||null;
-    const midY=(yTop+yBase)/2;
+    const midY=yTop+rawH/2; // true geometric midpoint
+    /* FIX: only show badge+label when layer renders tall enough (>=16px) */
+    const BADGE_MIN_H=16;
+    const showBadge=rawH>=BADGE_MIN_H;
+    /* FIX: clamp badge y so it never escapes its own layer bounds */
+    const badgeY=Math.min(Math.max(midY-7,yTop+1),yBase-13);
 
     /* segment rectangle + hatch fill overlay */
     const segId=`seg-${i}`;
@@ -1459,11 +1673,12 @@ function drawBoreholeColumn(){
       <rect class="seg-fill" x="${PAD_LEFT}" y="${yTop}" width="${COL_W}" height="${h}"
         fill="${clr}" fill-opacity="0.28" stroke="${clr}" stroke-width="1" rx="0"/>
       ${pat?`<rect x="${PAD_LEFT}" y="${yTop}" width="${COL_W}" height="${h}" fill="url(#${pat})" clip-path="url(#col-clip)"/>`:``}
-      <!-- layer number badge -->
-      <rect x="${PAD_LEFT+2}" y="${midY-8}" width="16" height="14" fill="${clr}" fill-opacity="0.9" rx="2"/>
-      <text x="${PAD_LEFT+10}" y="${midY+3}" text-anchor="middle" fill="#070d0f" font-size="8.5" font-weight="700" font-family="'IBM Plex Mono',monospace">${l.n}</text>
-      <!-- layer name clipped -->
-      <text x="${PAD_LEFT+22}" y="${midY+3.5}" fill="${clr}" font-size="8" font-family="'IBM Plex Mono',monospace" clip-path="url(#col-clip)">${l.name.length>10?l.name.slice(0,9)+"…":l.name}</text>
+      ${showBadge
+        ?`<rect x="${PAD_LEFT+2}" y="${badgeY}" width="16" height="14" fill="${clr}" fill-opacity="0.9" rx="2"/>
+      <text x="${PAD_LEFT+10}" y="${badgeY+10}" text-anchor="middle" fill="#070d0f" font-size="8.5" font-weight="700" font-family="'IBM Plex Mono',monospace">${l.n}</text>
+      <text x="${PAD_LEFT+22}" y="${badgeY+10}" fill="${clr}" font-size="8" font-family="'IBM Plex Mono',monospace" clip-path="url(#col-clip)">${l.name.length>10?l.name.slice(0,9)+"...":l.name}</text>`
+        :`<line x1="${PAD_LEFT-2}" y1="${midY}" x2="${PAD_LEFT+8}" y2="${midY}" stroke="${clr}" stroke-width="1.5" opacity="0.9"/>
+      <text x="${PAD_LEFT-4}" y="${midY+3.5}" text-anchor="end" fill="${clr}" font-size="7.5" font-weight="700" font-family="'IBM Plex Mono',monospace">${l.n}</text>`}
     </g>`;
 
     /* aquifer casing/screen overlay */
@@ -1543,11 +1758,11 @@ function drawBoreholeColumn(){
 
 /* IX1D detail panel on layer click */
 function bhSelectLayer(idx){
-  const l=VES_LAYERS[idx];
+  const l=S.vesLayers[idx];
   if(!l) return;
   /* compute cumulative depth */
   let cum=0;
-  for(let i=0;i<idx;i++) if(VES_LAYERS[i].thick) cum+=VES_LAYERS[i].thick;
+  for(let i=0;i<idx;i++) if(S.vesLayers[i].thick) cum+=S.vesLayers[i].thick;
   const topD=cum.toFixed(1);
   const baseD=l.thick?(cum+l.thick).toFixed(1):"∞ (half-space)";
 
@@ -1560,7 +1775,7 @@ function bhSelectLayer(idx){
   const clr=clrMap[l.cls]||"#5a7f88";
 
   /* rho log-position for bar marker */
-  const allRho=VES_LAYERS.map(x=>x.res);
+  const allRho=S.vesLayers.map(x=>x.res);
   const rhoMin=Math.min(...allRho)*0.5; const rhoMax=Math.max(...allRho)*1.5;
   const pct=((Math.log10(l.res)-Math.log10(rhoMin))/(Math.log10(rhoMax)-Math.log10(rhoMin)))*100;
 
